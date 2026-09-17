@@ -8,7 +8,7 @@
 
 ## In progress
 
-- `STEP-001` — Research: механизм вызова агента. `FIX STEP-001` (2026-09-17) закрыл все 3 finding FAIL-review (`planning/reviews/STEP-001/REVIEW-2026-09-17T1800.md`) живыми stdin- и cancel-тестами на обоих CLI (см. Evidence п.5 в STEP-001). Ожидает повторный `REVIEW STEP-001`. Остаточные раскрытые ограничения: Codex happy-path и Codex cancel не подтверждены эмпирически из-за квоты аккаунта (доступна вновь 2026-09-20) — не blocker, зафиксировано в ADR-004.
+- `STEP-001` — Research: механизм вызова агента. Второй `REVIEW STEP-001` (`REVIEW-2026-09-17T1830.md`) вернул **FAIL** с одним finding: F-004 (Medium) — cancel-тест закрыт по существу первым `FIX`, но без сохранённого durable-артефакта в `spikes/agent-invocation/evidence/`. Fix тривиален (зафиксировать уже полученные данные в файл, без новых платных вызовов CLI).
 
 ## Blocked
 
@@ -16,7 +16,7 @@
 
 ## Next unblocked work
 
-- Повторный `REVIEW STEP-001` — независимая проверка исправлений.
+- `FIX STEP-001` (второй, короткий цикл — только F-004), затем повторный `REVIEW STEP-001`.
 - `STEP-002` — Project scaffolding (зависимостей нет, доступен для `PLAN STEP-002` параллельно).
 - После PASS: `STEP-005`/`STEP-009` разблокируются полностью.
 
