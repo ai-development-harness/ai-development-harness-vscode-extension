@@ -4,13 +4,13 @@
 
 ## System context
 
-VSCode extension, работающий над git-репозиторием, структурированным по `ai-development-harness-template`. Читает состояние проекта только из файлов на диске (нет собственной базы данных, нет сетевого backend'а плагина). Для выполнения mutating-команд (`PLAN`, `IMPLEMENT`, `REVIEW` и т.д.) делегирует фактическую работу внешнему агенту (Claude Code / Codex) — конкретный механизм вызова не определён, см. `docs/OPEN_QUESTIONS.md` OQ-001 и `STEP-001`.
+VSCode extension, работающий над git-репозиторием, структурированным по `ai-development-harness-template`. Читает состояние проекта только из файлов на диске (нет собственной базы данных, нет сетевого backend'а плагина). Для выполнения mutating-команд (`PLAN`, `IMPLEMENT`, `REVIEW` и т.д.) делегирует фактическую работу внешнему агенту — первично Codex CLI (единственный runtime, реально сконфигурированный в этом шаблоне через `.codex/`), опционально Claude Code. Механизм вызова — headless CLI с JSON-выводом через stdin, см. `ADR-004`.
 
 ## Основные компоненты / границы
 
 - **Parser layer** (`src/parser/`) — чтение `.project/manifest.yaml`, парсинг STEP/REQ/ADR-файлов (labeled markdown, см. ADR-002), структурный разбор `EXECUTION_PROTOCOL.md`. Единственный компонент, знающий о путях к файлам (ADR-001) — остальные компоненты получают данные через него, не читают файловую систему напрямую.
 - **Command layer** (`src/commands/`) — регистрация Command Palette команд, pre-dispatch валидация (INIT guard, dependencies, mutation policy), делегирование в agent integration layer.
-- **Agent integration layer** (`src/api/`) — вызов агента для выполнения команды; механизм не определён (OQ-001).
+- **Agent integration layer** (`src/api/`) — вызов агента для выполнения команды; тонкий адаптер над двумя headless CLI executor'ами (Codex первично, Claude Code опционально), контракт — `ADR-004`.
 - **Explorer** (`src/explorer/`) — `TreeDataProvider` поверх Parser layer.
 - **Editor providers** (`src/editor/`) — diagnostics, code lens, hover, autocomplete для STEP/REQ/ADR-файлов.
 - **Status bar** (`src/ui/statusBar.ts`) — агрегированное состояние поверх Parser layer, с батчингом.
@@ -29,7 +29,7 @@ VSCode extension, работающий над git-репозиторием, ст
 
 - VSCode Extension API (v1.85+).
 - `simple-git` — git-статус для сборки контекста команд.
-- Внешний агент (Claude Code / Codex CLI или SDK) — точный интеграционный контракт не определён, см. OQ-001.
+- Внешний агент, первично Codex CLI (SDK/headless-режим — уточняется STEP-001), опционально Claude Code — точный интеграционный контракт не определён, см. OQ-001.
 - Нет внешних сетевых сервисов, кроме потенциального вызова агента.
 
 ## Security boundaries
@@ -50,4 +50,4 @@ VSCode 1.85+, Electron only, Node.js runtime, бандлится через esbu
 
 ## Известный architecture debt / drift
 
-Механизм интеграции с агентом (OQ-001) не выбран — Agent integration layer на момент INIT является заглушкой/интерфейсом без реализации до завершения `STEP-001`.
+Механизм интеграции с агентом выбран и подтверждён живым вызовом (`ADR-004`), но happy-path для Codex CLI (первичный executor) эмпирически не подтверждён — только error-path (реальная квота аккаунта была исчерпана во время STEP-001). Agent integration layer (`src/api/`) ещё не реализован (реализация — `STEP-009`); переподтвердить Codex happy-path перед/во время неё.

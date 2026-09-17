@@ -19,11 +19,11 @@ Resolution: ...
 
 ```text
 OQ-001 — Каким механизмом плагин вызывает агента (Claude Code / Codex) для выполнения команды и получения structured-результата?
-Status: OPEN
+Status: RESOLVED
 Affects: REQ-005, STEP-001, STEP-009
 Context: Исходный ТЗ предполагал HTTP-подобный «Claude Code API» с JSON-контрактом HarnessCommand/HarnessResult, которого не существует в задокументированном виде. Реалистичные варианты: headless CLI (print/JSON output режим), открытый VSCode-терминал с автовставкой промпта, процесс через Agent SDK.
 Decision needed: Выбрать механизм и подтвердить его spike'ом до начала STEP-009 (Terminal Integration).
-Resolution: —
+Resolution: ADR-004. Headless CLI с JSON-выводом, подтверждено живыми вызовами обоих CLI (`spikes/agent-invocation/`): `codex exec --json` — первичный executor (happy-path не подтверждён эмпирически из-за квоты аккаунта, только error-path); `claude -p --output-format json` — вторичный, полностью подтверждён (успешный read-only вызов). Промпт передаётся через stdin (не argv) — снимает найденный вживую баг с variadic-флагами/argv injection.
 ```
 
 ```text

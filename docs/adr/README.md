@@ -25,3 +25,4 @@ ADR фиксирует **устойчивое архитектурное реш�
 | [ADR-001](ADR-001-manifest-driven-paths.md) | Все пути протокола читаются из `.project/manifest.yaml` | Accepted |
 | [ADR-002](ADR-002-step-file-format.md) | STEP/REQ/ADR-файлы парсятся как labeled markdown, не YAML frontmatter | Accepted |
 | [ADR-003](ADR-003-mvp-command-scope.md) | MVP Command Palette ограничена 11 командами из 24 | Accepted |
+| [ADR-004](ADR-004-agent-invocation-mechanism.md) | Вызов агента через headless CLI (`codex exec`/`claude -p`, JSON, stdin) | Accepted |
