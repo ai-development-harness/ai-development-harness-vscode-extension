@@ -8,7 +8,7 @@
 
 ## In progress
 
-- `STEP-001` — Research: механизм вызова агента. Второй `FIX STEP-001` (2026-09-17) закрыл F-004 (`REVIEW-2026-09-17T1830.md`) — сохранён durable-артефакт `spikes/agent-invocation/evidence/claude-cancel-test.txt` с полной расшифровкой cancel-теста, без новых вызовов CLI. Ожидает третий `REVIEW STEP-001`.
+—
 
 ## Blocked
 
@@ -16,13 +16,11 @@
 
 ## Next unblocked work
 
-- Третий `REVIEW STEP-001` — независимая проверка F-004.
-- `STEP-002` — Project scaffolding (зависимостей нет, доступен для `PLAN STEP-002` параллельно).
-- После PASS: `STEP-005`/`STEP-009` разблокируются полностью.
+- `STEP-002` — Project scaffolding (зависимостей нет). `STEP-005`/`STEP-009` частично разблокированы (их зависимость на `STEP-001` закрыта), но полностью не unblocked — `STEP-005` всё ещё ждёт `STEP-003`/`STEP-004`, `STEP-009` ждёт `STEP-005`.
 
 ## Recent completed
 
-—
+- `STEP-001` — Research: механизм вызова агента для command dispatch. `PASS` (`planning/reviews/STEP-001/REVIEW-2026-09-17T1900.md`, третий review-цикл) после двух FIX-циклов (F-001..F-004, все закрыты живыми, проверяемыми данными). Решение — `ADR-004`. Остаточные явно раскрытые ограничения: Codex happy-path/cancel не подтверждены эмпирически из-за квоты аккаунта — переподтвердить перед/во время `STEP-009`.
 
 ## Known drift / risks
 

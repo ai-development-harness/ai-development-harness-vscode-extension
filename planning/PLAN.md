@@ -4,7 +4,7 @@
 
 | STEP | Название | Type | Priority | Status | Depends on | REQ |
 |---|---|---|---|---|---|---|
-| STEP-001 | Research: механизм вызова агента для command dispatch | RESEARCH | Критический | В работе | — | REQ-005 |
+| STEP-001 | Research: механизм вызова агента для command dispatch | RESEARCH | Критический | Выполнено | — | REQ-005 |
 | STEP-002 | Project scaffolding и инструментарий | IMPLEMENTATION | Критический | Запланировано | — | — |
 | STEP-003 | Parser layer (manifest, STEP/REQ/ADR, EXECUTION_PROTOCOL) | IMPLEMENTATION | Критический | Запланировано | STEP-002 | REQ-001, REQ-002, REQ-003 |
 | STEP-004 | i18n service (RU default + EN) | IMPLEMENTATION | Средний | Запланировано | STEP-002 | REQ-006 |

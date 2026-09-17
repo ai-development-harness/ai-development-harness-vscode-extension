@@ -1,6 +1,6 @@
 # STEP-001 — Research: механизм вызова агента для command dispatch
 
-**Статус:** В работе
+**Статус:** Выполнено
 **Type:** RESEARCH
 **Приоритет:** Критический
 **Фаза:** MVP — фундамент
@@ -151,16 +151,15 @@ Product code не создаётся (STEP-002 ещё не выполнен). З
 
 ## Review status
 
-**Latest verdict:** FAIL
-**Latest report:** `planning/reviews/STEP-001/REVIEW-2026-09-17T1830.md`
+**Latest verdict:** PASS
+**Latest report:** `planning/reviews/STEP-001/REVIEW-2026-09-17T1900.md`
 
 ## Blocker / Failure reason
 
-Все findings обоих review-циклов закрыты:
+Нет. Все findings трёх review-циклов закрыты и подтверждены:
 
-- `REVIEW-2026-09-17T1800.md`: F-001/F-002/F-003 — закрыты первым `FIX STEP-001`, подтверждено вторым review построчной сверкой файлов.
-- `REVIEW-2026-09-17T1830.md`: F-004 (Medium, durability cancel-теста) — закрыт вторым `FIX STEP-001` (см. Evidence п.6, `evidence/claude-cancel-test.txt`).
+- `REVIEW-2026-09-17T1800.md`: F-001/F-002/F-003 — закрыты первым `FIX STEP-001`.
+- `REVIEW-2026-09-17T1830.md`: F-004 — закрыт вторым `FIX STEP-001`.
+- `REVIEW-2026-09-17T1900.md`: PASS, полный повторный проход по acceptance criteria без новых non-cosmetic находок.
 
-Остаточные, явно раскрытые ограничения (не blocker, не finding — известные пределы этого окружения): (1) Codex happy-path не подтверждён эмпирически из-за квоты аккаунта, доступна вновь после 2026-09-20; (2) Codex cancel-поведение отдельно не тестировалось. Оба зафиксированы в `ADR-004` Consequences.
-
-Handoff: повторный `REVIEW STEP-001`.
+Остаточные, явно раскрытые ограничения (не blocker — известные пределы этого окружения, не влияют на закрытие research-задачи STEP-001): (1) Codex happy-path (`turn.completed`) не подтверждён эмпирически из-за квоты аккаунта, доступна вновь после 2026-09-20 — переподтвердить перед/во время `STEP-009`; (2) Codex cancel-поведение отдельно не тестировалось. Оба зафиксированы в `ADR-004` Consequences.
