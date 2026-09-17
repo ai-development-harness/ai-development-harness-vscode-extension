@@ -29,3 +29,6 @@ coverage/
 .cache/
 .vscode-test/
 !.nvmrc
+
+# Генерируется integration-тестами STEP-004 внутри fixture-workspace.
+tests/fixtures/workspace/.project/

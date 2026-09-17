@@ -1,0 +1,7 @@
+{
+  "harness.language.ru.label": "Русский",
+  "harness.language.en.label": "English",
+  "harness.command.changeLanguage.prompt": "Выберите язык интерфейса Harness",
+  "harness.config.readError": "Не удалось прочитать {path} ({message}); используется автоопределение языка.",
+  "harness.config.writeError": "Не удалось сохранить выбранный язык в {path} ({message})."
+}

@@ -18,7 +18,15 @@
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
-  "contributes": {},
+  "contributes": {
+    "commands": [
+      {
+        "command": "harness.changeLanguage",
+        "title": "%harness.command.changeLanguage.title%",
+        "category": "Harness"
+      }
+    ]
+  },
   "scripts": {
     "compile": "tsc --noEmit",
     "build": "node esbuild.config.mjs",
