@@ -26,7 +26,7 @@ npm install
 
 ## Testing
 
-- Unit-тесты: Jest, конфигурация `jest.config.mjs`, файлы `tests/unit/**/*.test.ts`. На STEP-002 содержательных тестов ещё нет — `npm test` проходит с нулевым числом тестов, это ожидаемо.
+- Unit-тесты: Jest, конфигурация `jest.config.mjs`, файлы `tests/unit/**/*.test.ts`. С STEP-003 покрывают Parser layer (`src/parser/**`) на fixtures — реальных `.project/manifest.yaml`/`TEMPLATE.md`/`SPEC.md`/`EXECUTION_PROTOCOL.md`, скопированных в `tests/fixtures/**`.
 - Integration-тесты: Mocha через `@vscode/test-cli`, конфигурация `.vscode-test.mjs`, файлы `tests/integration/**/*.test.js` (JS, не TS — `@vscode/test-cli` не транспилирует TypeScript, поэтому integration-тесты пишутся напрямую в JS, чтобы не вводить отдельный build-шаг только для тестов). Один smoke-тест на STEP-002: активация extension без исключений.
 
 ## Lint / formatting / type checking
