@@ -11,7 +11,10 @@ suite('i18n service (STEP-004)', () => {
   };
 
   suiteTeardown(async () => {
-    await fs.rm(path.dirname(configPath()), { recursive: true, force: true });
+    // STEP-005: fixture-workspace теперь содержит committed `.project/manifest.yaml`
+    // в этой же директории — удалять нужно только сам runtime-файл конфигурации,
+    // не всю `.project/` целиком.
+    await fs.rm(configPath(), { force: true });
   });
 
   test('команда harness.changeLanguage зарегистрирована', async () => {

@@ -1,3 +1,14 @@
 {
-  "harness.command.changeLanguage.title": "Change language"
+  "harness.command.changeLanguage.title": "Change language",
+  "harness.command.init.title": "Init project",
+  "harness.command.addStep.title": "Add step",
+  "harness.command.plan.title": "Plan step",
+  "harness.command.implement.title": "Implement step",
+  "harness.command.review.title": "Review step",
+  "harness.command.fix.title": "Fix step",
+  "harness.command.run.title": "Run step",
+  "harness.command.nextStep.title": "Next step",
+  "harness.command.status.title": "Status project",
+  "harness.command.quickFix.title": "Quick fix",
+  "harness.command.reconcile.title": "Reconcile project"
 }

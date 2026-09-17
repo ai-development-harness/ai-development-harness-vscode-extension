@@ -24,6 +24,61 @@
         "command": "harness.changeLanguage",
         "title": "%harness.command.changeLanguage.title%",
         "category": "Harness"
+      },
+      {
+        "command": "harness.init",
+        "title": "%harness.command.init.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.addStep",
+        "title": "%harness.command.addStep.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.plan",
+        "title": "%harness.command.plan.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.implement",
+        "title": "%harness.command.implement.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.review",
+        "title": "%harness.command.review.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.fix",
+        "title": "%harness.command.fix.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.run",
+        "title": "%harness.command.run.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.nextStep",
+        "title": "%harness.command.nextStep.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.status",
+        "title": "%harness.command.status.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.quickFix",
+        "title": "%harness.command.quickFix.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.reconcile",
+        "title": "%harness.command.reconcile.title%",
+        "category": "Harness"
       }
     ]
   },
