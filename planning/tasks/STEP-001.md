@@ -139,15 +139,28 @@ Product code не создаётся (STEP-002 ещё не выполнен). З
 1. **Инспекция реально установленных CLI** в окружении: `codex --version` → `codex-cli 0.154.0` (`codex login status` → `Logged in using ChatGPT`); `claude --version` → `2.1.263 (Claude Code)` (`claude auth status` → `loggedIn: true`, `subscriptionType: "pro"`). Оба CLI документируют headless-режим со структурированным JSON-выводом (`codex exec --json`/`--output-schema`; `claude -p --output-format json`) — подтверждено по `--help`, не по памяти.
 2. **Живой read-only spike** (см. `spikes/agent-invocation/README.md`, сырые данные — `spikes/agent-invocation/evidence/`):
    - `codex exec -s read-only --ephemeral --json ...` → exit 1, но чистый структурированный JSONL (`thread.started`/`turn.started`/`error`/`turn.failed`). Причина ошибки — реальный usage limit аккаунта («try again at Sep 20th, 2026»), не сбой механизма. Happy-path НЕ подтверждён эмпирически — известное ограничение, зафиксировано в `docs/architecture.md` (Known architecture debt) и в ADR-004.
-   - `claude -p --output-format json --permission-mode plan --permission-prompts none --allowedTools Read "..."` → exit 0, полный успех. Корректно прочитал `planning/tasks/STEP-002.md` и точно процитировал его `## Goal`, `permission_denials: []`, `is_error: false`, ничего не изменил в репозитории (подтверждено `git status` после прогона — untracked/staged состояние не изменилось).
-3. **Побочная находка**: первая попытка вызова `claude` с порядком `--allowedTools "Read" "<prompt>"` привела к реальной ошибке `Input must be provided either through stdin or as a prompt argument` — variadic-опция поглотила позиционный prompt. Задокументировано в ADR-004 как обоснование решения передавать context/prompt через stdin, а не argv.
+   - `claude -p --output-format json --permission-mode plan --permission-prompts none --allowedTools Read "..."` → exit 0, полный успех. Корректно прочитал `planning/tasks/STEP-002.md` и точно процитировал его `## Goal`, `permission_denials: []`, `is_error: false`. *(Исправлено `FIX STEP-001`, F-001: исходно здесь стояло «подтверждено `git status` после прогона» — эта конкретная проверка фактически не была выполнена изолированно в момент вызова, только ретроспективно позже. См. `spikes/agent-invocation/README.md` для полной формулировки исправления.)*
+3. **Побочная находка**: первая попытка вызова `claude` с порядком `--allowedTools "Read" "<prompt>"` привела к реальной ошибке `Input must be provided either through stdin or as a prompt argument` — variadic-опция поглотила позиционный prompt. На момент `RUN STEP-001` из этого делался вывод про stdin как решение, но сам stdin-путь ещё не был проверен вживую (см. п.5 — проверено `FIX STEP-001`).
 4. Решение зафиксировано `ADR-004` (Accepted). `docs/OPEN_QUESTIONS.md` OQ-001 → `RESOLVED`.
+5. **`FIX STEP-001` (2026-09-17)** — закрытие findings `REVIEW-2026-09-17T1800.md`:
+   - **F-001**: см. исправление в п.2 выше и в `spikes/agent-invocation/README.md`.
+   - **F-002**: живой stdin-тест для обоих CLI, бракетированный `git status` до/после (идентичен, без изменений). `echo "<prompt>" | codex exec --json ...` → stderr `Reading prompt from stdin...`, дошёл до `turn.started` (тот же usage limit дальше, но stdin реально принят и обработан). `echo "<prompt>" | claude -p --output-format json ...` → exit 0, полный happy path через stdin, `total_cost_usd: 0.0925`. Evidence — `spikes/agent-invocation/evidence/{codex-exec-stdin-stdout.jsonl,codex-exec-stdin-stderr.txt,claude-print-stdin-stdout.json}`. ADR-004 Decision §5 обновлён — stdin-передача теперь подтверждена эмпирически для обоих CLI, не только по документации.
+   - **F-003**: cancel-тест на `claude -p` (запущен в background, `SIGTERM` через 3с). Процесс завершился в пределах 1с (exit 143), без orphan-процессов, `stdout`/`stderr` пусты (при `--output-format json` cancel не даёт partial-результата — зафиксировано как design constraint), `git status` до/после идентичен. Codex cancel отдельно не тестировался (review допускал проверку на одном CLI; у Codex сейчас слишком короткое окно из-за квоты для содержательного mid-flight теста) — зафиксировано как остаточное ограничение в ADR-004 Consequences, не скрыто.
+   - `ADR-004` обновлён (Decision §5/§6, Consequences, Security implications) по итогам обеих проверок.
 
 ## Review status
 
-**Latest verdict:** NOT REVIEWED
-**Latest report:** —
+**Latest verdict:** FAIL
+**Latest report:** `planning/reviews/STEP-001/REVIEW-2026-09-17T1800.md`
 
 ## Blocker / Failure reason
 
-Не blocker, но частичное покрытие acceptance criterion «Spike демонстрирует реальный end-to-end вызов... с получением результата»: полностью подтверждено только для Claude Code (вторичный executor); для Codex CLI (первичный) подтверждён только error-path из-за реальной квоты аккаунта в этом окружении, не happy-path. Решение (ADR-004) принято с этим явно раскрытым ограничением, а не скрыто. На усмотрение `REVIEW STEP-001` — принять как PASS с follow-up (переподтвердить Codex happy-path перед/во время STEP-009) или потребовать `FIX STEP-001` для повторной попытки после сброса квоты (после 2026-09-20).
+`FIX STEP-001` (2026-09-17) закрыл все три finding из `planning/reviews/STEP-001/REVIEW-2026-09-17T1800.md` (см. Evidence п.5):
+
+- F-001 (High) — исправлена формулировка Evidence (не переписывая сам факт, а честно описывая, что было и не было проверено в моменте).
+- F-002 (High) — закрыт живым stdin-тестом для обоих CLI.
+- F-003 (Medium) — закрыт живым cancel-тестом на `claude -p`.
+
+Остаточные, явно раскрытые ограничения (не blocker, не finding — известные пределы этого окружения): (1) Codex happy-path (`turn.completed`) по-прежнему не подтверждён эмпирически из-за квоты аккаунта, доступна вновь после 2026-09-20 — переподтвердить перед/во время STEP-009; (2) Codex cancel-поведение отдельно не тестировалось (review допускал проверку на одном CLI). Оба зафиксированы в `ADR-004` Consequences, не скрыты.
+
+Handoff: повторный `REVIEW STEP-001`.

@@ -8,7 +8,7 @@
 
 ## In progress
 
-- `STEP-001` — Research: механизм вызова агента (`RUN STEP-001`, 2026-09-17). Решение принято и подтверждено живыми вызовами (`ADR-004`), но не закрыт: требуется независимый `REVIEW STEP-001` (в т.ч. решение — PASS с follow-up или FIX для повторной попытки Codex happy-path после сброса квоты 2026-09-20). Status STEP-001 → «В работе», не «Выполнено».
+- `STEP-001` — Research: механизм вызова агента. `FIX STEP-001` (2026-09-17) закрыл все 3 finding FAIL-review (`planning/reviews/STEP-001/REVIEW-2026-09-17T1800.md`) живыми stdin- и cancel-тестами на обоих CLI (см. Evidence п.5 в STEP-001). Ожидает повторный `REVIEW STEP-001`. Остаточные раскрытые ограничения: Codex happy-path и Codex cancel не подтверждены эмпирически из-за квоты аккаунта (доступна вновь 2026-09-20) — не blocker, зафиксировано в ADR-004.
 
 ## Blocked
 
@@ -16,9 +16,9 @@
 
 ## Next unblocked work
 
-- `REVIEW STEP-001` — независимая проверка research-результата и ADR-004 перед закрытием.
+- Повторный `REVIEW STEP-001` — независимая проверка исправлений.
 - `STEP-002` — Project scaffolding (зависимостей нет, доступен для `PLAN STEP-002` параллельно).
-- После PASS `REVIEW STEP-001`: `STEP-005`/`STEP-009` разблокируются полностью.
+- После PASS: `STEP-005`/`STEP-009` разблокируются полностью.
 
 ## Recent completed
 
