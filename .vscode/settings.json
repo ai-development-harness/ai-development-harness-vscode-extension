@@ -1,0 +1,20 @@
+{
+  "workbench.colorCustomizations": {
+    "editorGhostText.foreground": "#5DF62C",
+    "titleBar.activeBackground": "#d38532",
+    "titleBar.activeForeground": "#000000",
+    "titleBar.inactiveBackground": "#d38532",
+    "titleBar.inactiveForeground": "#000000",
+    "titleBar.border": "#d38532",
+    "activityBar.background": "#d38532",
+    "activityBar.foreground": "#000000",
+    "statusBar.background": "#d38532",
+    "statusBar.foreground": "#000000",
+    "statusBar.debuggingBackground": "#d38532",
+    "statusBar.debuggingForeground": "#000000",
+    "tab.activeBorder": "#d38532",
+    "iLoveWorkSpaceColors": true,
+    "iLoveWorkSpaceRandom": false
+  },
+  "sarif-viewer.connectToGithubCodeScanning": "off"
+}
