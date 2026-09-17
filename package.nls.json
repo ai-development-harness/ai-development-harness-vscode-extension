@@ -1,3 +1,14 @@
 {
-  "harness.command.changeLanguage.title": "Изменить язык"
+  "harness.command.changeLanguage.title": "Изменить язык",
+  "harness.command.init.title": "Инициализировать проект",
+  "harness.command.addStep.title": "Добавить STEP",
+  "harness.command.plan.title": "Спланировать STEP",
+  "harness.command.implement.title": "Реализовать STEP",
+  "harness.command.review.title": "Проверить STEP (review)",
+  "harness.command.fix.title": "Исправить STEP (fix)",
+  "harness.command.run.title": "Выполнить STEP (run)",
+  "harness.command.nextStep.title": "Следующий STEP",
+  "harness.command.status.title": "Статус проекта",
+  "harness.command.quickFix.title": "Быстрое исправление",
+  "harness.command.reconcile.title": "Согласовать проект (reconcile)"
 }
