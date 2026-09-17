@@ -61,7 +61,7 @@ echo "<prompt>" | claude --output-format json --permission-mode plan --permissio
 
 ## FIX STEP-001 — F-003: cancel-тест (`claude -p`)
 
-Запущен `claude -p` в background (более длинный promt — перечислить и описать все STEP-файлы), через 3 секунды отправлен `SIGTERM` дочернему процессу.
+Запущен `claude -p` в background (более длинный promt — перечислить и описать все STEP-файлы), через 3 секунды отправлен `SIGTERM` дочернему процессу. Полная расшифровка (команда, PID, `ps`/`pgrep`, exit status, размеры файлов) сохранена как durable-артефакт в `evidence/claude-cancel-test.txt` (добавлено вторым циклом `FIX STEP-001`, F-004 — изначально эти данные существовали только в тексте сессии).
 
 Результат:
 - Процесс (`PID`, прямой child, без вложенных subprocess — `pgrep -P` пуст) переставал отвечать на `kill -0` уже через 1 секунду после `SIGTERM` — быстрое чистое завершение, `SIGKILL` не потребовался.

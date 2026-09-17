@@ -8,7 +8,7 @@
 
 ## In progress
 
-- `STEP-001` — Research: механизм вызова агента. Второй `REVIEW STEP-001` (`REVIEW-2026-09-17T1830.md`) вернул **FAIL** с одним finding: F-004 (Medium) — cancel-тест закрыт по существу первым `FIX`, но без сохранённого durable-артефакта в `spikes/agent-invocation/evidence/`. Fix тривиален (зафиксировать уже полученные данные в файл, без новых платных вызовов CLI).
+- `STEP-001` — Research: механизм вызова агента. Второй `FIX STEP-001` (2026-09-17) закрыл F-004 (`REVIEW-2026-09-17T1830.md`) — сохранён durable-артефакт `spikes/agent-invocation/evidence/claude-cancel-test.txt` с полной расшифровкой cancel-теста, без новых вызовов CLI. Ожидает третий `REVIEW STEP-001`.
 
 ## Blocked
 
@@ -16,7 +16,7 @@
 
 ## Next unblocked work
 
-- `FIX STEP-001` (второй, короткий цикл — только F-004), затем повторный `REVIEW STEP-001`.
+- Третий `REVIEW STEP-001` — независимая проверка F-004.
 - `STEP-002` — Project scaffolding (зависимостей нет, доступен для `PLAN STEP-002` параллельно).
 - После PASS: `STEP-005`/`STEP-009` разблокируются полностью.
 

@@ -147,6 +147,7 @@ Product code не создаётся (STEP-002 ещё не выполнен). З
    - **F-002**: живой stdin-тест для обоих CLI, бракетированный `git status` до/после (идентичен, без изменений). `echo "<prompt>" | codex exec --json ...` → stderr `Reading prompt from stdin...`, дошёл до `turn.started` (тот же usage limit дальше, но stdin реально принят и обработан). `echo "<prompt>" | claude -p --output-format json ...` → exit 0, полный happy path через stdin, `total_cost_usd: 0.0925`. Evidence — `spikes/agent-invocation/evidence/{codex-exec-stdin-stdout.jsonl,codex-exec-stdin-stderr.txt,claude-print-stdin-stdout.json}`. ADR-004 Decision §5 обновлён — stdin-передача теперь подтверждена эмпирически для обоих CLI, не только по документации.
    - **F-003**: cancel-тест на `claude -p` (запущен в background, `SIGTERM` через 3с). Процесс завершился в пределах 1с (exit 143), без orphan-процессов, `stdout`/`stderr` пусты (при `--output-format json` cancel не даёт partial-результата — зафиксировано как design constraint), `git status` до/после идентичен. Codex cancel отдельно не тестировался (review допускал проверку на одном CLI; у Codex сейчас слишком короткое окно из-за квоты для содержательного mid-flight теста) — зафиксировано как остаточное ограничение в ADR-004 Consequences, не скрыто.
    - `ADR-004` обновлён (Decision §5/§6, Consequences, Security implications) по итогам обеих проверок.
+6. **`FIX STEP-001` (второй цикл, 2026-09-17)** — закрытие F-004 из `REVIEW-2026-09-17T1830.md`: cancel-тест (п.5 выше) был реально проведён, но не имел сохранённого durable-артефакта. Данные из п.5 (команда, PID, `ps`/`pgrep`, exit status, размеры файлов) сохранены в `spikes/agent-invocation/evidence/claude-cancel-test.txt` — без новых вызовов CLI, только фиксация уже полученного результата.
 
 ## Review status
 
@@ -155,10 +156,11 @@ Product code не создаётся (STEP-002 ещё не выполнен). З
 
 ## Blocker / Failure reason
 
-`FIX STEP-001` (первый цикл, 2026-09-17) закрыл F-001/F-002/F-003 из `REVIEW-2026-09-17T1800.md` по существу — подтверждено вторым `REVIEW STEP-001` (`REVIEW-2026-09-17T1830.md`). Остался один новый finding из второго review:
+Все findings обоих review-циклов закрыты:
 
-- F-004 (Medium) — cancel-тест (F-003 первого цикла) подтверждён только текстом сессии, без сохранённого durable-артефакта в `spikes/agent-invocation/evidence/`. Fix trivial — зафиксировать уже полученные в рамках предыдущего FIX данные (PID/ps/exit status/pgrep) в файл, без новых платных вызовов CLI.
+- `REVIEW-2026-09-17T1800.md`: F-001/F-002/F-003 — закрыты первым `FIX STEP-001`, подтверждено вторым review построчной сверкой файлов.
+- `REVIEW-2026-09-17T1830.md`: F-004 (Medium, durability cancel-теста) — закрыт вторым `FIX STEP-001` (см. Evidence п.6, `evidence/claude-cancel-test.txt`).
 
-Остаточные, явно раскрытые ограничения (не blocker, не finding — известные пределы этого окружения, без изменений со времени первого цикла): (1) Codex happy-path не подтверждён эмпирически из-за квоты аккаунта, доступна вновь после 2026-09-20; (2) Codex cancel-поведение отдельно не тестировалось. Оба зафиксированы в `ADR-004` Consequences.
+Остаточные, явно раскрытые ограничения (не blocker, не finding — известные пределы этого окружения): (1) Codex happy-path не подтверждён эмпирически из-за квоты аккаунта, доступна вновь после 2026-09-20; (2) Codex cancel-поведение отдельно не тестировалось. Оба зафиксированы в `ADR-004` Consequences.
 
-Handoff: `FIX STEP-001` (второй цикл, только F-004), затем повторный `REVIEW STEP-001`.
+Handoff: повторный `REVIEW STEP-001`.

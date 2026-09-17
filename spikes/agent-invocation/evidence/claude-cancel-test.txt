@@ -1,0 +1,80 @@
+Cancel-тест `claude -p` — FIX STEP-001 (F-003 из REVIEW-2026-09-17T1800.md).
+Зафиксировано FIX STEP-001 (второй цикл, F-004 из REVIEW-2026-09-17T1830.md):
+эти данные были реально получены в момент первого FIX, но не были сохранены
+как durable-артефакт — см. finding F-004. Никаких новых вызовов CLI для
+этого файла не потребовалось.
+
+## Команда
+
+  claude --output-format json --permission-mode plan --permission-prompts none --allowedTools Read \
+    -p "Перечисли имена всех файлов в директории planning/tasks/ и для каждого одним предложением опиши Goal. Ничего не редактируй." \
+    > /tmp/claude-cancel-stdout.json 2> /tmp/claude-cancel-stderr.log &
+
+Запущена в background из корня репозитория `ai-development-harness-vscode-extension`.
+
+## git status ДО запуска
+
+  M  planning/STATUS.md
+  A  planning/reviews/STEP-001/REVIEW-2026-09-17T1800.md
+  M  planning/tasks/STEP-001.md
+
+## Процесс до kill (через 3с после старта)
+
+  Started PID=223473
+
+  ps -o pid,ppid,stat,etime,cmd -p 223473:
+    PID    PPID STAT     ELAPSED CMD
+  223473  223470 SNl        00:03 claude --output-format json --permission-mode plan --permission-prompts none --allowedTools Read -p Перечисли имена всех файлов в директории planning/tasks/ и для каждого одним предложением опиши Goal. Ничего не редактируй.
+
+  pgrep -P 223473 (дочерние процессы claude): пусто — процесс не порождал
+  собственных подпроцессов на уровне ОС для этого read-only вызова.
+
+## Отправлен SIGTERM
+
+  kill -TERM 223473
+
+  Через 1с: `kill -0 223473` → ошибка ("process 223473 no longer exists
+  1s after SIGTERM") — процесс уже завершён, SIGKILL не потребовался.
+
+  wait 223473 → exit status 143 (= 128 + 15, стандартный код завершения
+  по SIGTERM в POSIX shell).
+
+## Orphan-процессы после теста
+
+  pgrep -af claude:
+    5807   /usr/lib/claude-desktop/resources/chrome-native-host chrome-extension://fcoeoabgfenejglbffodgkkbkcdhcgfn/
+    158909 /home/user/.vscode/extensions/anthropic.claude-code-2.1.274-linux-x64/resources/native-binary/claude --output-format stream-json --verbose --input-format stream-json --max-thinking-tokens 31999 --permission-prompt-tool stdio --setting-sources=user,project,local --permission-mode acceptEdits --include-partial-messages --debug --debug-to-stderr --enable-auth-status --no-chrome --replay-user-messages
+    223470 /usr/bin/zsh -c ... (сам bash-wrapper, выполнявший тест)
+
+  Ни один из них не является потомком PID 223473 — это сама текущая
+  VSCode-сессия (агент, выполняющий этот STEP) и chrome native host,
+  запущенные независимо и до теста. Orphan-процессов от отменённого
+  вызова не осталось.
+
+## Файлы вывода после теста
+
+  /tmp/claude-cancel-stdout.json — 0 байт
+  /tmp/claude-cancel-stderr.log  — 0 байт
+
+  При `--output-format json` (в отличие от вероятного поведения
+  `stream-json`) отменённый вызов не пишет вообще никакого partial-контента
+  до момента получения финального JSON-объекта — весь результат
+  буферизуется и сбрасывается только при штатном завершении turn.
+  Agent integration layer (ADR-004 Decision §6) должен трактовать любую
+  отмену как «результата нет», а не пытаться восстановить частичный ответ.
+
+## git status ПОСЛЕ теста
+
+  M  planning/STATUS.md
+  A  planning/reviews/STEP-001/REVIEW-2026-09-17T1800.md
+  M  planning/tasks/STEP-001.md
+
+Идентичен состоянию до теста — отменённый вызов не оставил репозиторий
+в неконсистентном состоянии.
+
+## Итог
+
+Clean, быстрое (<1с) завершение по SIGTERM, без orphan-процессов, без
+партиального вывода, без порчи репозитория. Подтверждает ADR-004
+Decision §6 для Claude Code. Codex cancel отдельно не тестировался —
+см. ADR-004 Consequences (остаточное, явно раскрытое ограничение).
