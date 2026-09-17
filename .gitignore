@@ -23,6 +23,9 @@ __pycache__/
 .venv/
 node_modules/
 dist/
+out/
 build/
 coverage/
 .cache/
+.vscode-test/
+!.nvmrc

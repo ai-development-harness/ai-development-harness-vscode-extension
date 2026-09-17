@@ -1,6 +1,6 @@
 # STEP-002 — Project scaffolding и инструментарий
 
-**Статус:** Запланировано
+**Статус:** Выполнено
 **Type:** IMPLEMENTATION
 **Приоритет:** Критический
 **Фаза:** MVP — фундамент
@@ -163,13 +163,31 @@ tests/
 
 ## Evidence
 
-Заполняется по факту реализации и verification.
+`IMPLEMENT STEP-002` (2026-09-17):
+
+1. **Созданные/дополненные файлы** (все — новый tooling, продуктовый код не затронут): `package.json`, `tsconfig.json`, `eslint.config.js`, `esbuild.config.mjs`, `jest.config.mjs`, `.vscode-test.mjs`, `.nvmrc`, `src/extension.ts` (no-op `activate`/`deactivate`), `tests/unit/.gitkeep`, `tests/integration/extension.test.js`, `.github/workflows/ci.yml`, обновлённые `docs/development.md` и `.gitignore` (добавлены `out/`, `.vscode-test/`).
+2. **Отклонение от Implementation plan**: интеграционный тест реализован как `tests/integration/extension.test.js` (не `.ts`, как указано в Structure секции плана) — `@vscode/test-cli` запускает Mocha напрямую без TypeScript-транспиляции, отдельный build-шаг только ради одного smoke-теста избыточен на этом этапе. Зафиксировано также в `docs/development.md`.
+3. **`npm install`** на чистом клоне (`node_modules` отсутствовал) — `added 581 packages`, без peer-dependency conflicts. 4 audit-предупреждения (2 low, 1 moderate, 1 high) в транзитивных dev-зависимостях — не блокирует STEP, не product runtime dependency; зафиксировать как technical debt для отдельного рассмотрения, не исправлять здесь вслепую (`npm audit fix --force` может сломать зафиксированные в плане совместимые версии).
+4. **`npm run compile`** (`tsc --noEmit`, strict mode) — 0 ошибок.
+5. **`npm run lint`** (ESLint 10, flat config) — 0 ошибок/warnings.
+6. **`npm run build`** (esbuild) — `esbuild: build complete.`, создан `dist/extension.js`.
+7. **`npm test`** (Jest) — исходно падал (`No tests found, exiting with code 1`) без `passWithNoTests`; добавлено `passWithNoTests: true` в `jest.config.mjs` (соответствует ожиданию плана «0 содержательных тестов — это ожидаемо, не ошибка»). После правки: `No tests found, exiting with code 0`.
+8. **`npm run test:integration`** (`@vscode/test-cli`, реальный download VSCode `1.138.0` linux-x64, headless) — Extension Host поднялся, `Loading development extension...`, smoke-тест `extension activates without throwing` → **1 passing (98ms)**, exit code 0.
+9. **F5 / `.vscode/launch.json`**: создан вручную пользователем после обсуждения (конфигурация `extensionHost`, `--extensionDevelopmentPath=${workspaceFolder}`, `outFiles` на `dist/extension.js` bundle из esbuild, `preLaunchTask: "npm: build"` — использует auto-detected VSCode npm task, отдельный `tasks.json` не требуется). Содержимое проверено (валидный JSON, соответствует структуре esbuild-бандла). Ручной F5-прогон через VSCode UI не выполнялся в этой сессии (агент не имеет интерактивного доступа к VSCode UI) — но `npm run test:integration` (п.8) уже независимо подтверждает, что реальный Extension Development Host активирует extension без ошибок, что покрывает существо acceptance criterion.
+10. **Закрыто**: `.nvmrc` ранее не подхватывался `git add` из-за глобального (не project) `~/.gitignore` пользователя. Пользователь добавил `!.nvmrc` в project-level `.gitignore` — project-level правила имеют приоритет над `core.excludesFile`, проверено (`git status --short .nvmrc` → `?? .nvmrc`, файл виден git как untracked, больше не игнорируется).
+
+## FIX STEP-002 (2026-09-17, закрытие findings `REVIEW-2026-09-17T1746.md`)
+
+11. **F-001 закрыт**: `docs/development.md`, секция `## Extension Development Host` — абзац, утверждавший «`.vscode/launch.json` пока не создан», переписан. Теперь корректно описывает существующую конфигурацию (`Run Extension`, тип `extensionHost`, `outFiles` на `dist/extension.js`, `preLaunchTask: "npm: build"`) и то, что F5 пересобирает bundle перед запуском Extension Development Host. Никакой другой файл/код не менялся (corrective scope ограничен подтверждённым finding, per protocol §11.3).
+12. Повторная verification после правки (только docs, но перепроверено без сокращений): `npm run compile` (0 ошибок), `npm run lint` (0 ошибок/warnings), `npm run build` (`esbuild: build complete.`), `npm test` (`No tests found, exiting with code 0`) — все exit 0, идентично предыдущим прогонам. `npm run test:integration` не перезапускался повторно — правка не затрагивает код/конфигурацию, влияющую на Extension Host, а полный прогон уже дважды подтверждён (изначальный IMPLEMENT + независимый reviewer).
 
 ## Review status
 
-**Latest verdict:** NOT REVIEWED
-**Latest report:** —
+**Latest verdict:** PASS
+**Latest report:** `planning/reviews/STEP-002/REVIEW-2026-09-17T1752.md`
+
+История: `REVIEW-2026-09-17T1746.md` — FAIL (F-001), закрыт `FIX STEP-002`, подтверждено `REVIEW-2026-09-17T1752.md` — PASS.
 
 ## Blocker / Failure reason
 
-—
+Нет. Оба review-цикла пройдены: единственный finding (F-001) закрыт и подтверждён независимым повторным review.

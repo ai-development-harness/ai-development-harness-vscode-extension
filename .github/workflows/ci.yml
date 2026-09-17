@@ -1,0 +1,113 @@
+# Человекочитаемое имя workflow в GitHub Actions UI.
+# Пример: "CI".
+name: CI
+
+# GitHub Actions events, на которых выполняется project-specific pipeline.
+# Пример: push + pull_request + ручной workflow_dispatch.
+on:
+  # Проверять каждый push любой ветки.
+  # Пример: commit в feature/* сразу получает install/lint/build/test result.
+  push:
+  # Проверять Pull Request до merge.
+  # Пример: сломанная сборка блокируется ещё в PR, не после merge.
+  pull_request:
+  # Разрешить ручной запуск workflow из GitHub UI/API.
+  # Пример: повторная проверка без нового commit.
+  workflow_dispatch:
+
+# Минимальные GitHub token permissions всего workflow.
+# Пример: только `contents: read`, потому что workflow ничего не публикует.
+permissions:
+  # Только чтение repository contents; workflow ничего не коммитит и не пушит.
+  # Пример: `read` достаточно для checkout, install и локального прогона проверок.
+  contents: read
+
+# Набор jobs workflow.
+# Пример: один `build-and-test` job — install → lint → typecheck → build → test.
+jobs:
+  # Стабильный machine-readable ID job.
+  # Пример: `build-and-test` используется в branch protection/check names.
+  build-and-test:
+    # Отображаемое имя job в GitHub UI.
+    # Пример: "Install, lint, typecheck, build, test".
+    name: Install, lint, typecheck, build, test
+    # Runner image для выполнения pipeline.
+    # Пример: `ubuntu-latest`; integration-тесты через `@vscode/test-electron` скачивают собственный VSCode.
+    runs-on: ubuntu-latest
+    # Максимальное время job до принудительной остановки.
+    # Пример: 15 минут — с запасом на download VSCode для integration-тестов.
+    timeout-minutes: 15
+
+    # Последовательность шагов job.
+    # Пример: checkout → setup Node → install → lint → typecheck → build → unit → integration.
+    steps:
+      # Отображаемое имя checkout step.
+      # Пример: "Checkout repository".
+      - name: Checkout repository
+        # Официальный action для получения contents текущего commit/PR.
+        # Пример: actions/checkout@v7; обновляй major осознанно, не автоматически в рамках product STEP.
+        uses: actions/checkout@v7
+        # Параметры checkout action.
+        # Пример: отключить сохранение credentials, так как workflow только читает repository.
+        with:
+          # Не оставлять GitHub token в локальном git config runner после checkout.
+          # Пример: false снижает ненужные credentials в job, которому push не требуется.
+          persist-credentials: false
+
+      # Отображаемое имя шага настройки Node.js runtime.
+      # Пример: "Setup Node.js".
+      - name: Setup Node.js
+        # Официальный action фиксирует Node.js runtime и кэширует npm-зависимости.
+        # Пример: actions/setup-node@v5.
+        uses: actions/setup-node@v5
+        # Параметры Node.js runtime.
+        # Пример: версия берётся из `.nvmrc`, чтобы не дублировать её в двух местах.
+        with:
+          # Файл с major-версией Node.js, общий с локальной разработкой.
+          # Пример: ".nvmrc" содержит "22".
+          node-version-file: ".nvmrc"
+          # Package manager, зависимости которого кэшируются между запусками.
+          # Пример: "npm" — используется `package-lock.json`.
+          cache: "npm"
+
+      # Отображаемое имя шага установки зависимостей.
+      # Пример: "Install dependencies".
+      - name: Install dependencies
+        # Детерминированная установка по `package-lock.json`, без его изменения.
+        # Пример: `npm ci` быстрее и строже `npm install` для CI.
+        run: npm ci
+
+      # Отображаемое имя lint-шага.
+      # Пример: "Lint".
+      - name: Lint
+        # ESLint flat config (`eslint.config.js`) по `src/**/*.ts`.
+        # Пример: npm-скрипт `lint` из `package.json`.
+        run: npm run lint
+
+      # Отображаемое имя typecheck-шага.
+      # Пример: "Typecheck".
+      - name: Typecheck
+        # `tsc --noEmit` в strict mode; эмит делает отдельно esbuild.
+        # Пример: npm-скрипт `compile` из `package.json`.
+        run: npm run compile
+
+      # Отображаемое имя build-шага.
+      # Пример: "Build".
+      - name: Build
+        # esbuild бандлит `src/extension.ts` → `dist/extension.js`.
+        # Пример: npm-скрипт `build` из `package.json`.
+        run: npm run build
+
+      # Отображаемое имя шага unit-тестов.
+      # Пример: "Unit tests".
+      - name: Unit tests
+        # Jest по `tests/unit/**/*.test.ts`; 0 тестов на этом этапе — не ошибка (`passWithNoTests`).
+        # Пример: npm-скрипт `test` из `package.json`.
+        run: npm test
+
+      # Отображаемое имя шага integration-тестов.
+      # Пример: "Integration tests (Extension Host)".
+      - name: Integration tests (Extension Host)
+        # `@vscode/test-cli` поднимает реальный headless Extension Host; `xvfb-run` даёт виртуальный display на Linux runner.
+        # Пример: npm-скрипт `test:integration` из `package.json`.
+        run: xvfb-run -a npm run test:integration

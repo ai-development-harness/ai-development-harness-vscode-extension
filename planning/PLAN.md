@@ -5,7 +5,7 @@
 | STEP | Название | Type | Priority | Status | Depends on | REQ |
 |---|---|---|---|---|---|---|
 | STEP-001 | Research: механизм вызова агента для command dispatch | RESEARCH | Критический | Выполнено | — | REQ-005 |
-| STEP-002 | Project scaffolding и инструментарий | IMPLEMENTATION | Критический | Запланировано | — | — |
+| STEP-002 | Project scaffolding и инструментарий | IMPLEMENTATION | Критический | Выполнено | — | — |
 | STEP-003 | Parser layer (manifest, STEP/REQ/ADR, EXECUTION_PROTOCOL) | IMPLEMENTATION | Критический | Запланировано | STEP-002 | REQ-001, REQ-002, REQ-003 |
 | STEP-004 | i18n service (RU default + EN) | IMPLEMENTATION | Средний | Запланировано | STEP-002 | REQ-006 |
 | STEP-005 | Command Palette: 11 MVP-команд + pre-dispatch валидация | IMPLEMENTATION | Критический | Запланировано | STEP-001, STEP-003, STEP-004 | REQ-001 |
@@ -24,4 +24,4 @@ REQ-007 (Dependency graph), REQ-008 (Health Dashboard), REQ-009 (Mutation Policy
 
 ## Незаблокированная работа прямо сейчас
 
-STEP-001 и STEP-002 не имеют зависимостей — оба доступны для `PLAN` немедленно (могут вестись параллельно).
+STEP-001 и STEP-002 `Выполнено`. `STEP-003` и `STEP-004` зависели только от `STEP-002` — оба разблокированы, доступны для `PLAN` (могут вестись параллельно). `STEP-005` остаётся заблокирован до завершения `STEP-003`/`STEP-004`.
