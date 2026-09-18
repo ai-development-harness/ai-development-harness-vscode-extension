@@ -55,6 +55,20 @@ export const Uri = {
   },
 };
 
+/**
+ * STEP-014: minimal stub so `listStepFiles`' `new vscode.RelativePattern(...)`
+ * does not throw. No prior test exercised the real `listAllSteps` →
+ * `findFiles` path (targets always resolved via a tree-node object); the
+ * STEP-014 delete-guard re-check tests are the first to go through it for
+ * real, with `findFiles` itself mocked per-call in the test file.
+ */
+export class RelativePattern {
+  constructor(
+    public base: unknown,
+    public pattern: string
+  ) {}
+}
+
 /* eslint-disable @typescript-eslint/no-var-requires */
 const nodeFs = require('node:fs');
 

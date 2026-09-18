@@ -17,7 +17,7 @@
 | STEP-011 | Test suite: >80% coverage + integration-тесты | IMPLEMENTATION | Высокий | Запланировано | STEP-005..STEP-010 | REQ-001..REQ-006 |
 | STEP-012 | Документационный пакет (RU/EN) | DOCUMENTATION | Средний | Запланировано | STEP-005..STEP-010 | REQ-001..REQ-006 |
 | STEP-013 | Упаковка и релиз v0.1.0 (MVP beta) | RELEASE | Высокий | Запланировано | STEP-011, STEP-012 | — |
-| STEP-014 | Закрыть TOCTOU-окно между guard'ом `canMarkDone` и записью в Explorer | BUGFIX | Средний | Запланировано | STEP-006 | REQ-002 |
+| STEP-014 | Закрыть TOCTOU-окно между guard'ом `canMarkDone` и записью в Explorer | BUGFIX | Средний | Выполнено | STEP-006 | REQ-002 |
 
 ## Не запланировано (Phase 2, деферред REQ)
 
@@ -25,6 +25,4 @@ REQ-007 (Dependency graph), REQ-008 (Health Dashboard), REQ-009 (Mutation Policy
 
 ## Незаблокированная работа прямо сейчас
 
-STEP-001..STEP-006 `Выполнено`. `STEP-007` зависит только от `STEP-003` — полностью разблокирован, доступен для `PLAN`. `STEP-008` (depends on STEP-003, STEP-005) и `STEP-009` (depends on STEP-001, STEP-005) тоже полностью разблокированы — их единственная незакрытая hard dependency была `STEP-005`.
-
-`STEP-014` (corrective, F-018 из `REVIEW STEP-006`) зависит только от `STEP-006` — полностью разблокирован, доступен для `PLAN`.
+STEP-001..STEP-006, STEP-014 `Выполнено`. `STEP-007` зависит только от `STEP-003` — полностью разблокирован, доступен для `PLAN`. `STEP-008` (depends on STEP-003, STEP-005) и `STEP-009` (depends on STEP-001, STEP-005) тоже полностью разблокированы — их единственная незакрытая hard dependency была `STEP-005`.

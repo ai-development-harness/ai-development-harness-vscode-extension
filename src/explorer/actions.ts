@@ -3,6 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import * as vscode from 'vscode';
 import type { I18nService } from '../locales/activation';
 import { checkInitGuard } from '../commands/preDispatch';
+import type { ValidationResult } from '../commands/preDispatch';
 import { listStepFiles } from '../commands/stepPicker';
 import { parseExecutionProtocol } from '../parser/executionProtocol';
 import { parseAdrFile, parseReqSpec, parseStepFile } from '../parser/markdownParser';
@@ -256,7 +257,10 @@ export async function markDone(
   if (confirmed !== i18n.t('harness.explorer.confirm.yes')) return;
 
   const stepPath = path.join(workspaceRoot, manifest.protocol.taskDirectory, `${step.id}.md`);
-  await writeStepFile(stepPath, (content) => setStatus(content, 'Выполнено'), i18n);
+  // STEP-014 (F-018): re-guard on the same read that produces the written
+  // content — the modal confirmation above has no time limit, so `guard`
+  // computed before it may be stale by the time the user answers.
+  await writeStepFile(stepPath, step.id, (fresh) => canMarkDone(fresh), (content) => setStatus(content, 'Выполнено'), i18n);
   provider.invalidate('tasks');
 }
 
@@ -288,7 +292,16 @@ export async function flagBlocker(
     return;
   }
   const stepPath = path.join(workspaceRoot, manifest.protocol.taskDirectory, `${step.id}.md`);
-  await writeStepFile(stepPath, (content) => setStatusAndBlocker(content, 'Заблокировано', reason), i18n);
+  // STEP-014 (F-018): closes the async gap between `readFreshStep` and the
+  // second read inside `writeStepFile`, via the same guarded-write path as
+  // `markDone` (no user-facing wait here, but re-guarding is now shared).
+  await writeStepFile(
+    stepPath,
+    step.id,
+    (fresh) => canFlagBlocker(fresh, reason),
+    (content) => setStatusAndBlocker(content, 'Заблокировано', reason),
+    i18n
+  );
   provider.invalidate('tasks');
 }
 
@@ -312,12 +325,7 @@ export async function deleteArtifact(
   }
   const step = await resolveTargetStep(workspaceRoot, manifest, i18n, arg, 'harness.command.stepPicker.prompt');
   if (!step) return;
-  const [allSteps, allReqs, allAdrs] = await Promise.all([
-    listAllSteps(workspaceRoot, manifest),
-    listAllReqs(workspaceRoot, manifest),
-    listAllAdrs(workspaceRoot, manifest),
-  ]);
-  const guard = canDelete(step.id, allSteps, allReqs, allAdrs);
+  const guard = await evaluateDeleteGuard(workspaceRoot, manifest, step.id);
   if (!guard.ok) {
     void vscode.window.showErrorMessage(i18n.t(guard.messageKey, guard.params));
     return;
@@ -329,19 +337,64 @@ export async function deleteArtifact(
   );
   if (confirmed !== i18n.t('harness.explorer.confirm.yes')) return;
 
+  // STEP-014 (F-018): re-check incoming references right before the actual
+  // delete — the modal above has no time limit, and a headless agent (ADR-004)
+  // may add a referencing STEP/REQ/ADR while it is open.
+  const reguard = await evaluateDeleteGuard(workspaceRoot, manifest, step.id);
+  if (!reguard.ok) {
+    void vscode.window.showErrorMessage(i18n.t(reguard.messageKey, reguard.params));
+    return;
+  }
+
   const uri = vscode.Uri.file(path.join(workspaceRoot, manifest.protocol.taskDirectory, `${step.id}.md`));
   await vscode.workspace.fs.delete(uri, { useTrash: true });
   provider.invalidate('tasks');
 }
 
+async function evaluateDeleteGuard(workspaceRoot: string, manifest: ManifestData, stepId: string): Promise<ValidationResult> {
+  const [allSteps, allReqs, allAdrs] = await Promise.all([
+    listAllSteps(workspaceRoot, manifest),
+    listAllReqs(workspaceRoot, manifest),
+    listAllAdrs(workspaceRoot, manifest),
+  ]);
+  return canDelete(stepId, allSteps, allReqs, allAdrs);
+}
+
+/**
+ * STEP-014 (F-018): guarded write — the guard must be evaluated on the same
+ * read that produces the written content, not on a read taken before an
+ * unbounded modal confirmation. `reguard` runs on freshly re-read/parsed
+ * content immediately before `transform`/`writeFile`; any failure (read
+ * error, parse error, id mismatch, or the guard itself) is fail-closed and
+ * reuses the same localized `messageKey` the pre-dialog guard would have
+ * shown, without a second dialog.
+ */
 async function writeStepFile(
   absPath: string,
+  expectedStepId: string,
+  reguard: (fresh: StepData) => ValidationResult,
   transform: (content: string) => ReturnType<typeof setStatus>,
   i18n: I18nService
 ): Promise<boolean> {
   const uri = vscode.Uri.file(absPath);
-  const bytes = await vscode.workspace.fs.readFile(uri);
-  const content = Buffer.from(bytes).toString('utf8');
+  let content: string;
+  try {
+    const bytes = await vscode.workspace.fs.readFile(uri);
+    content = Buffer.from(bytes).toString('utf8');
+  } catch {
+    void vscode.window.showErrorMessage(i18n.t('harness.explorer.error.stepUnreadable', { step: expectedStepId }));
+    return false;
+  }
+  const parsed = parseStepFile(content);
+  if (!parsed.ok || parsed.value.data.id !== expectedStepId) {
+    void vscode.window.showErrorMessage(i18n.t('harness.explorer.error.stepUnreadable', { step: expectedStepId }));
+    return false;
+  }
+  const guard = reguard(parsed.value.data);
+  if (!guard.ok) {
+    void vscode.window.showErrorMessage(i18n.t(guard.messageKey, guard.params));
+    return false;
+  }
   const result = transform(content);
   if (!result.ok) {
     void vscode.window.showErrorMessage(i18n.t('harness.explorer.error.writeFailed', { reason: result.error.kind }));
