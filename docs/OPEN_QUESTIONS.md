@@ -43,3 +43,21 @@ Context: planning/EXECUTION_PROTOCOL.md определяет только пол
 Decision needed: Определить понятие до начала реализации графа зависимостей (вне MVP roadmap).
 Resolution: —
 ```
+
+```text
+OQ-004 — Как плагин резолвит пути к артефактам, которые реально существуют в Harness-проекте, но НЕ объявлены в `.project/manifest.yaml` (в первую очередь каталог ADR `docs/adr/`)?
+Status: OPEN
+Affects: REQ-002, REQ-003, ADR-001, STEP-006, STEP-007
+Context: Обнаружено при `PLAN STEP-006` (2026-09-18). ADR-001 требует брать все пути из манифеста, и манифест объявляет `sources.{requirements,architecture,roadmap,status,projectOverview,localBrief}`, `protocol.{file,taskDirectory,reviewDirectory,auditDirectory,skillSearchDirectory,skillRegistry,harnessUpdateDirectory}` и `repository.*`. Каталога ADR среди них нет, хотя Parser layer (STEP-003) уже умеет разбирать ADR-файлы (`parseAdrFile`), REQ-002 требует группу `Architecture` в дереве, а REQ-003 — autocomplete по существующим `ADR-NNN`. Манифест — harness-owned артефакт: добавление в него собственного ключа проектом конфликтует с `UPDATE HARNESS`. Возможные варианты: (a) деривация `dirname(sources.architecture)/adr` с проверкой существования и graceful degradation; (b) необязательный override в собственном файле настроек расширения `.project/harness-config.json` (STEP-004, вне ADR-001 по построению); (c) предложить upstream Harness добавить `sources.adrDirectory`/`protocol.adrDirectory`.
+Decision needed: Зафиксировать устойчивое правило (вероятно новый ADR-005) до того, как от него начнут зависеть несколько подсистем. STEP-006 не блокируется: решение изолировано в единственном модуле `src/explorer/paths.ts` (вариант (a) + degradation), чтобы смена правила была однострочной.
+Resolution: —
+```
+
+```text
+OQ-005 — Должно ли действие «Mark as done» из Sidebar Explorer синхронизировать projection-файлы (`planning/PLAN.md`, `planning/STATUS.md`) и статус связанного REQ?
+Status: DEFERRED
+Affects: REQ-002, STEP-006
+Context: Обнаружено при `REVIEW STEP-006` (`REVIEW-2026-09-18T0900.md`, F-010) и подтверждено незакрытым при повторном review (`REVIEW-2026-09-18T1500.md`, F-017). `src/explorer/actions.ts.markDone` пишет `**Статус:** Выполнено` только в canonical STEP-файл; `AGENTS.md` §10 и `EXECUTION_PROTOCOL.md` §25 требуют, чтобы projection-файлы не расходились с canonical, но синхронизация STEP↔PLAN/STATUS↔REQ — не одна механическая правка (нужно решить, что считать «синхронизацией»: строку в таблице PLAN, статус REQ, оба; и как это соотносится с тем, что projection-файлы и так предполагаются производными от canonical state — `RECONCILE PROJECT` уже умеет это сверять).
+Decision needed: Продуктовое решение — либо явно предупреждать пользователя после «Mark as done» и рекомендовать `RECONCILE PROJECT`, либо вынести автоматическую синхронизацию отдельным STEP с собственным Implementation plan. До решения `Mark as done` из UI сознательно оставляет этот разрыв (задокументировано здесь, а не молча).
+Resolution: —
+```

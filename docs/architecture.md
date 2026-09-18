@@ -19,7 +19,7 @@ VSCode extension, работающий над git-репозиторием, ст
 
 ## Data / state model
 
-Состояние не хранится плагином отдельно — при каждом обращении перечитываются файлы проекта (manifest, STEP/REQ/ADR, PLAN/STATUS). Кэширование (если появится, для производительности explorer/status bar) инвалидируется по `vscode.workspace.onDidChangeTextDocument`/`onDidSaveTextDocument` на релевантных путях.
+Состояние не хранится плагином отдельно — при каждом обращении перечитываются файлы проекта (manifest, STEP/REQ/ADR, PLAN/STATUS). Кэширование (Sidebar Explorer, `src/explorer/treeProvider.ts`, STEP-006 — по группам дерева, с debounce ~250мс) инвалидируется по `vscode.workspace.createFileSystemWatcher` на путях, объявленных в `.project/manifest.yaml`, а не по `onDidChangeTextDocument`/`onDidSaveTextDocument`: внешний агент (ADR-004) пишет файлы headless CLI мимо редактора, и события изменения/сохранения открытого документа такие правки не видят.
 
 ## Основные потоки
 

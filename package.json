@@ -79,8 +79,176 @@
         "command": "harness.reconcile",
         "title": "%harness.command.reconcile.title%",
         "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.refresh",
+        "title": "%harness.command.explorer.refresh.title%",
+        "category": "Harness",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "harness.explorer.filterByStatus",
+        "title": "%harness.command.explorer.filterByStatus.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.filterByType",
+        "title": "%harness.command.explorer.filterByType.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.filterByPriority",
+        "title": "%harness.command.explorer.filterByPriority.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.filterByRiskFlag",
+        "title": "%harness.command.explorer.filterByRiskFlag.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.search",
+        "title": "%harness.command.explorer.search.title%",
+        "category": "Harness",
+        "icon": "$(search)"
+      },
+      {
+        "command": "harness.explorer.clearFilters",
+        "title": "%harness.command.explorer.clearFilters.title%",
+        "category": "Harness",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "harness.explorer.openFile",
+        "title": "%harness.command.explorer.openFile.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.viewInExplorer",
+        "title": "%harness.command.explorer.viewInExplorer.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.markDone",
+        "title": "%harness.command.explorer.markDone.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.flagBlocker",
+        "title": "%harness.command.explorer.flagBlocker.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.createFollowUpStep",
+        "title": "%harness.command.explorer.createFollowUpStep.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.explorer.delete",
+        "title": "%harness.command.explorer.delete.title%",
+        "category": "Harness"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "harness",
+          "title": "Harness",
+          "icon": "resources/harness.svg"
+        }
+      ]
+    },
+    "views": {
+      "harness": [
+        {
+          "id": "harness.artifacts",
+          "name": "%harness.view.artifacts.name%"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "harness.artifacts",
+        "contents": "%harness.explorer.viewsWelcome%\n[%harness.explorer.viewsWelcome.button%](command:harness.init)",
+        "when": "harness.isHarnessProject == false"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "harness.explorer.refresh",
+          "when": "view == harness.artifacts",
+          "group": "navigation@1"
+        },
+        {
+          "command": "harness.explorer.search",
+          "when": "view == harness.artifacts",
+          "group": "navigation@2"
+        },
+        {
+          "command": "harness.explorer.clearFilters",
+          "when": "view == harness.artifacts && harness.explorer.hasFilters",
+          "group": "navigation@3"
+        },
+        {
+          "command": "harness.explorer.filterByStatus",
+          "when": "view == harness.artifacts",
+          "group": "1_filters"
+        },
+        {
+          "command": "harness.explorer.filterByType",
+          "when": "view == harness.artifacts",
+          "group": "1_filters"
+        },
+        {
+          "command": "harness.explorer.filterByPriority",
+          "when": "view == harness.artifacts",
+          "group": "1_filters"
+        },
+        {
+          "command": "harness.explorer.filterByRiskFlag",
+          "when": "view == harness.artifacts",
+          "group": "1_filters"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "harness.addStep",
+          "when": "view == harness.artifacts && viewItem =~ /^harness\\.group$/",
+          "group": "1_create"
+        },
+        {
+          "command": "harness.explorer.createFollowUpStep",
+          "when": "view == harness.artifacts && viewItem =~ /^harness\\.step\\b/",
+          "group": "1_create"
+        },
+        {
+          "command": "harness.explorer.openFile",
+          "when": "view == harness.artifacts && viewItem =~ /^harness\\.(step|req|adr|file)\\b/",
+          "group": "2_open"
+        },
+        {
+          "command": "harness.explorer.viewInExplorer",
+          "when": "view == harness.artifacts && viewItem =~ /^harness\\.(step|req|adr|file)\\b/",
+          "group": "2_open"
+        },
+        {
+          "command": "harness.explorer.markDone",
+          "when": "view == harness.artifacts && viewItem =~ /harness\\.step\\.canMarkDone/",
+          "group": "3_mutate"
+        },
+        {
+          "command": "harness.explorer.flagBlocker",
+          "when": "view == harness.artifacts && viewItem =~ /^harness\\.step\\b/",
+          "group": "3_mutate"
+        },
+        {
+          "command": "harness.explorer.delete",
+          "when": "view == harness.artifacts && viewItem =~ /^harness\\.step\\b/",
+          "group": "4_destructive"
+        }
+      ]
+    }
   },
   "scripts": {
     "compile": "tsc --noEmit",

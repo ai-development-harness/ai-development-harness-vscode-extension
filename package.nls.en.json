@@ -10,5 +10,21 @@
   "harness.command.nextStep.title": "Next step",
   "harness.command.status.title": "Status project",
   "harness.command.quickFix.title": "Quick fix",
-  "harness.command.reconcile.title": "Reconcile project"
+  "harness.command.reconcile.title": "Reconcile project",
+  "harness.command.explorer.refresh.title": "Explorer: refresh",
+  "harness.command.explorer.filterByStatus.title": "Explorer: filter by status",
+  "harness.command.explorer.filterByType.title": "Explorer: filter by type",
+  "harness.command.explorer.filterByPriority.title": "Explorer: filter by priority",
+  "harness.command.explorer.filterByRiskFlag.title": "Explorer: filter by risk flag",
+  "harness.command.explorer.search.title": "Explorer: search by ID",
+  "harness.command.explorer.clearFilters.title": "Explorer: clear filters",
+  "harness.command.explorer.openFile.title": "Explorer: open file",
+  "harness.command.explorer.viewInExplorer.title": "Explorer: reveal in Explorer view",
+  "harness.command.explorer.markDone.title": "Explorer: mark as done",
+  "harness.command.explorer.flagBlocker.title": "Explorer: flag as blocker",
+  "harness.command.explorer.createFollowUpStep.title": "Explorer: create follow-up STEP",
+  "harness.command.explorer.delete.title": "Explorer: delete",
+  "harness.view.artifacts.name": "Artifacts",
+  "harness.explorer.viewsWelcome": "This does not look like an initialized Harness project.",
+  "harness.explorer.viewsWelcome.button": "Init project"
 }
