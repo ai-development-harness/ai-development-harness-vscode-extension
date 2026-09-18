@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import json
 import os
 from pathlib import Path
 import re
@@ -65,25 +66,31 @@ def text_file(path: Path) -> bool:
     return True
 
 
-def parse_skill_frontmatter(path: Path) -> tuple[str | None, str | None]:
+def parse_markdown_frontmatter(path: Path) -> dict[str, str]:
+    """Parse the simple top-level scalar subset used by Harness skill/agent frontmatter."""
     try:
         text = path.read_text(encoding="utf-8")
     except Exception:
-        return None, None
+        return {}
     if not text.startswith("---\n"):
-        return None, None
+        return {}
     end = text.find("\n---\n", 4)
     if end < 0:
-        return None, None
-    fm = text[4:end]
-    name = None
-    desc = None
-    for line in fm.splitlines():
-        if line.startswith("name:"):
-            name = line.split(":", 1)[1].strip()
-        elif line.startswith("description:"):
-            desc = line.split(":", 1)[1].strip()
-    return name, desc
+        return {}
+    result: dict[str, str] = {}
+    for line in text[4:end].splitlines():
+        if not line or line[0].isspace() or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        value = value.strip().strip('"').strip("'")
+        if value:
+            result[key.strip()] = value
+    return result
+
+
+def parse_skill_frontmatter(path: Path) -> tuple[str | None, str | None]:
+    fields = parse_markdown_frontmatter(path)
+    return fields.get("name"), fields.get("description")
 
 
 def preceding_comment_block(lines: list[str], index: int) -> list[str]:
@@ -137,6 +144,115 @@ def config_parameter_lines(path: Path) -> list[tuple[int, str]]:
     return result
 
 
+SEMVER_TAG_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
+
+
+def semver_tag_tuple(tag: str) -> tuple[int, int, int] | None:
+    match = SEMVER_TAG_RE.fullmatch(tag)
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
+def validate_update_graph(root: Path, errors: list[str]) -> None:
+    path = root / ".project" / "harness-update-graph.json"
+    if not path.is_file():
+        return
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"invalid .project/harness-update-graph.json: {exc}")
+        return
+
+    if not isinstance(data, dict):
+        errors.append(".project/harness-update-graph.json root must be an object")
+        return
+    if data.get("schemaVersion") != 1:
+        errors.append(".project/harness-update-graph.json schemaVersion must be 1")
+
+    latest = data.get("latest")
+    if not isinstance(latest, str) or semver_tag_tuple(latest) is None:
+        errors.append(".project/harness-update-graph.json latest must be vMAJOR.MINOR.PATCH")
+        latest = None
+
+    transitions = data.get("transitions")
+    if not isinstance(transitions, list):
+        errors.append(".project/harness-update-graph.json transitions must be an array")
+        return
+
+    outgoing: dict[str, str] = {}
+    nodes: set[str] = set()
+    if latest:
+        nodes.add(latest)
+
+    for index, transition in enumerate(transitions):
+        prefix = f".project/harness-update-graph.json transitions[{index}]"
+        if not isinstance(transition, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+
+        source = transition.get("from")
+        target = transition.get("to")
+        source_v = semver_tag_tuple(source) if isinstance(source, str) else None
+        target_v = semver_tag_tuple(target) if isinstance(target, str) else None
+
+        if source_v is None:
+            errors.append(f"{prefix}.from must be vMAJOR.MINOR.PATCH")
+        if target_v is None:
+            errors.append(f"{prefix}.to must be vMAJOR.MINOR.PATCH")
+        if source_v is not None and target_v is not None and target_v <= source_v:
+            errors.append(f"{prefix} must move strictly forward")
+        if transition.get("kind") not in {"standard", "bridge"}:
+            errors.append(f"{prefix}.kind must be standard or bridge")
+        if not isinstance(transition.get("reloadRequired"), bool):
+            errors.append(f"{prefix}.reloadRequired must be boolean")
+        if transition.get("kind") == "bridge":
+            reason = transition.get("reason")
+            if not isinstance(reason, str) or not reason.strip():
+                errors.append(f"{prefix}.reason is required for bridge")
+
+        if isinstance(source, str) and isinstance(target, str):
+            if source in outgoing:
+                errors.append(f".project/harness-update-graph.json ambiguous route: multiple transitions from {source}")
+            else:
+                outgoing[source] = target
+            nodes.update({source, target})
+
+    if latest and latest in outgoing:
+        errors.append(".project/harness-update-graph.json latest must be terminal (no outgoing transition)")
+
+    if latest:
+        for start in sorted(nodes):
+            current = start
+            seen: set[str] = set()
+            while current != latest:
+                if current in seen:
+                    errors.append(f".project/harness-update-graph.json cycle detected from {start}")
+                    break
+                seen.add(current)
+                nxt = outgoing.get(current)
+                if nxt is None:
+                    errors.append(f".project/harness-update-graph.json release {start} cannot reach latest {latest}")
+                    break
+                current = nxt
+
+        manifest_path = root / ".project" / "manifest.yaml"
+        if manifest_path.is_file():
+            try:
+                manifest_text = manifest_path.read_text(encoding="utf-8")
+                manifest_release = None
+                for line in manifest_text.splitlines():
+                    if line.startswith("  release:"):
+                        manifest_release = line.split(":", 1)[1].split("#", 1)[0].strip().strip("\"'")
+                        break
+                if manifest_release and latest != f"v{manifest_release}":
+                    errors.append(
+                        f".project/harness-update-graph.json latest {latest} does not match manifest harness.release v{manifest_release}"
+                    )
+            except UnicodeDecodeError:
+                pass
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["ci", "commit", "manual"], default="manual")
@@ -156,6 +272,8 @@ def main() -> int:
     except Exception as exc:
         print(f"ERROR: invalid harness policy TOML: {exc}", file=sys.stderr)
         return 2
+
+    validate_update_graph(root, errors)
 
     # Core files.
     for rel in policy.get("required_files", []):
@@ -182,7 +300,7 @@ def main() -> int:
             if not desc:
                 errors.append(f"skill frontmatter missing description: {rel}")
 
-    # TOML syntax and agent bindings.
+    # TOML syntax and runtime agent bindings.
     for p in root.rglob("*.toml"):
         if ".git" in p.parts:
             continue
@@ -191,25 +309,86 @@ def main() -> int:
         except Exception as exc:
             errors.append(f"invalid TOML {p.relative_to(root)}: {exc}")
 
+    required_agents = policy.get("required_agents", [])
+
     codex_cfg_path = root / ".codex" / "config.toml"
     if codex_cfg_path.exists():
         try:
             codex_cfg = load_toml(codex_cfg_path)
             agents = codex_cfg.get("agents", {})
-            for agent in policy.get("required_agents", []):
+            for agent in required_agents:
                 entry = agents.get(agent)
                 if not isinstance(entry, dict):
                     errors.append(f"required Codex agent binding missing: {agent}")
                     continue
                 config_file = entry.get("config_file")
                 if not config_file:
-                    errors.append(f"agent {agent} missing config_file")
+                    errors.append(f"Codex agent {agent} missing config_file")
                     continue
                 resolved = (root / ".codex" / config_file).resolve()
                 if not resolved.is_file():
-                    errors.append(f"agent {agent} config missing: {config_file}")
+                    errors.append(f"Codex agent {agent} config missing: {config_file}")
         except Exception:
             pass
+
+    claude_settings_path = root / ".claude" / "settings.json"
+    if claude_settings_path.exists():
+        try:
+            claude_settings = json.loads(claude_settings_path.read_text(encoding="utf-8"))
+            if not isinstance(claude_settings.get("model"), str) or not claude_settings["model"].strip():
+                errors.append("Claude settings missing non-empty model")
+            effort = claude_settings.get("effortLevel")
+            if effort not in {"low", "medium", "high", "xhigh", "max"}:
+                errors.append("Claude settings effortLevel must be low/medium/high/xhigh/max")
+            permissions = claude_settings.get("permissions", {})
+            if permissions and permissions.get("defaultMode") not in {
+                "default", "acceptEdits", "auto", "dontAsk", "bypassPermissions", "plan"
+            }:
+                errors.append("Claude settings permissions.defaultMode is invalid")
+        except Exception as exc:
+            errors.append(f"invalid Claude settings JSON: {exc}")
+
+    claude_agents_root = root / ".claude" / "agents"
+    seen_claude_names: dict[str, str] = {}
+    if claude_agents_root.exists():
+        for p in sorted(claude_agents_root.glob("*.md")):
+            fields = parse_markdown_frontmatter(p)
+            rel = str(p.relative_to(root))
+            name = fields.get("name")
+            if not name:
+                errors.append(f"Claude agent frontmatter missing name: {rel}")
+                continue
+            if name in seen_claude_names:
+                errors.append(f"duplicate Claude agent name '{name}': {seen_claude_names[name]} and {rel}")
+            else:
+                seen_claude_names[name] = rel
+            if not fields.get("description"):
+                errors.append(f"Claude agent frontmatter missing description: {rel}")
+            if not fields.get("model"):
+                errors.append(f"Claude agent frontmatter missing model: {rel}")
+            if fields.get("effort") not in {"low", "medium", "high", "xhigh", "max"}:
+                errors.append(f"Claude agent invalid effort: {rel}")
+            permission_mode = fields.get("permissionMode")
+            if permission_mode not in {"default", "manual", "acceptEdits", "auto", "dontAsk", "bypassPermissions", "plan"}:
+                errors.append(f"Claude agent invalid permissionMode: {rel}")
+
+    for agent in required_agents:
+        claude_name = agent.replace("_", "-")
+        p = claude_agents_root / f"{claude_name}.md"
+        if not p.is_file():
+            errors.append(f"required Claude agent missing: {claude_name}")
+            continue
+        fields = parse_markdown_frontmatter(p)
+        if fields.get("name") != claude_name:
+            errors.append(f"Claude agent name mismatch: {p.relative_to(root)}")
+
+    claude_md = root / "CLAUDE.md"
+    if claude_md.exists():
+        try:
+            if "@AGENTS.md" not in claude_md.read_text(encoding="utf-8"):
+                errors.append("CLAUDE.md must import @AGENTS.md")
+        except UnicodeDecodeError:
+            errors.append("CLAUDE.md is not UTF-8")
 
     # Required command surface in all canonical routing docs.
     command_files = [root / "AGENTS.md", root / "docs/harness/COMMANDS.md", root / "planning/EXECUTION_PROTOCOL.md"]
@@ -228,10 +407,14 @@ def main() -> int:
             errors.append(f"AGENTS generated markers invalid: {start} / {end}")
 
     gitignore = (root / ".gitignore").read_text(encoding="utf-8") if (root / ".gitignore").exists() else ""
-    if "PROJECT_BRIEF.local.md" not in gitignore:
-        errors.append(".gitignore must ignore PROJECT_BRIEF.local.md")
-    if "AGENTS.local.md" not in gitignore:
-        errors.append(".gitignore must ignore AGENTS.local.md")
+    for ignored in [
+        "PROJECT_BRIEF.local.md",
+        "AGENTS.local.md",
+        "CLAUDE.local.md",
+        ".claude/settings.local.json",
+    ]:
+        if ignored not in gitignore:
+            errors.append(f".gitignore must ignore {ignored}")
 
     files = tracked_files(root)
     forbidden = policy.get("forbidden_tracked_globs", [])

@@ -13,6 +13,11 @@ default_branch = "main"
 # Пример: '^v\d+\.\d+\.\d+$'.
 tag_pattern = '^v\d+\.\d+\.\d+$'
 
+# Machine-readable граф допустимых переходов. Updater читает его из default_branch только как routing metadata;
+# содержимое release по-прежнему берётся исключительно из immutable tags.
+# Пример: ".project/harness-update-graph.json".
+update_manifest = ".project/harness-update-graph.json"
+
 [state]
 # Машинный lock с текущим known BASE проекта.
 # Пример: ".project/harness.lock.json".
@@ -25,10 +30,12 @@ report_directory = "planning/harness-updates"
 [ownership]
 # Полностью Harness-owned paths. Updater заменяет их только если local content не расходится с BASE;
 # при local modification update блокируется вместо silent overwrite.
-# Пример: docs/harness/** и core workflow skills.
+# Пример: docs/harness/**, core workflow skills и runtime adapter README.
 harness_owned = [
+  ".project/harness-update-graph.json",
   ".agents/skills/**",
   ".codex/README.md",
+  ".claude/README.md",
   ".project/README.md",
   ".project/harness-policy.toml",
   ".project/harness-update.toml",
@@ -39,10 +46,13 @@ harness_owned = [
 ]
 
 # Shared paths могут содержать project-specific настройки; при расхождении local/base/target применяется 3-way merge.
-# Пример: пользователь может менять model/effort в .codex/config.toml.
+# Пример: пользователь может менять model/effort в Codex и Claude Code runtime adapters.
 shared = [
   ".codex/config.toml",
   ".codex/agents/**",
+  "CLAUDE.md",
+  ".claude/settings.json",
+  ".claude/agents/**",
   ".github/**",
   ".gitignore",
   ".gitmessage",

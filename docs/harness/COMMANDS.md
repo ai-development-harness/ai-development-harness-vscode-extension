@@ -97,19 +97,31 @@ Read-only рекомендация следующего **unblocked** шага �
 
 Финальный release-oriented review по фактическим проектным gates: unresolved critical/high findings, requirements, migrations, tests/build, security, docs, upgrade/deploy concerns. Создаёт report в `planning/releases/`.
 
-## `CHECK HARNESS UPDATE`
+## `CHECK HARNESS UPDATE [TO <tag>]`
 
-Read-only проверка доступной версии Harness. Использует `.project/harness.lock.json` как BASE и `.project/harness-update.toml` как ownership/source policy. Показывает safe changes/conflicts, но не меняет working tree, Git refs, lock, STEP, commit, push или PR.
+Read-only проверка доступного маршрута Harness update. Использует `.project/harness.lock.json` как BASE, `.project/harness-update.toml` как source/ownership policy и canonical remote `.project/harness-update-graph.json` как routing metadata.
 
-Если lock отсутствует, возвращает legacy-adoption blocker вместо угадывания BASE. Подробно: [`UPDATES.md`](UPDATES.md).
+Без `TO` конечный target берётся из `.project/harness-update-graph.json.latest`. С `TO <tag>` пользователь задаёт конкретный конечный target. В обоих случаях updater обязан построить допустимую цепочку release hops; существующий immutable tag без route не считается допустимым target.
 
-## `UPDATE HARNESS`
+Команда моделирует весь route hop-by-hop, показывает bridge/reload boundaries, safe changes/conflicts и не меняет working tree, Git refs, lock, STEP, commit, push или PR.
 
-Maintenance mutation protocol layer без STEP. Допускается только после успешного `CHECK HARNESS UPDATE`.
+Команда разрешена как до, так и после `INIT PROJECT`: `project.initialized: false` не является blocker для проверки Harness update.
 
-Updater меняет только allowlisted Harness paths, использует 3-way merge для shared files, сохраняет generated project blocks в `README.md`/`AGENTS.md` и останавливается до mutation при конфликтах.
+## `UPDATE HARNESS [TO <tag>]`
 
-Команда не запускает migration/install/bootstrap scripts из target release и не выполняет commit/push/PR. После неё: inspect diff → `GIT CHECK` → `COMMIT`.
+Maintenance mutation protocol layer без STEP. Допускается только после успешного check **для того же конечного target и route**.
+
+Команда применяет заранее проверенную цепочку строго hop-by-hop. Каждый hop использует immutable release tags и обычные ownership/3-way rules. Lock обновляется только после postcondition соответствующего hop. Если edge помечен `reloadRequired`, текущий запуск останавливается на достигнутом bridge с `UPDATER_RELOAD_REQUIRED`; после reload повторяется та же команда до исходного конечного target.
+
+Команда разрешена до `INIT PROJECT`. Pre-init update обновляет только protocol layer/lock, не выполняет bootstrap проекта и не переводит `project.initialized` в `true`.
+
+Пример конечного target:
+
+```text
+UPDATE HARNESS TO v0.2.3
+```
+
+Updater не выполняет executable migration/install/bootstrap actions из `.project/harness-update-graph.json` или target release, не делает commit/push/PR. После неё: inspect diff → `GIT CHECK` → `COMMIT`.
 
 ## `GIT CHECK`
 
