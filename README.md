@@ -10,6 +10,15 @@ VSCode extension, превращающая редактор в IDE-слой на
 Подробнее: [`docs/PROJECT.md`](docs/PROJECT.md) · [требования](docs/requirements/SPEC.md) · [архитектура](docs/architecture.md) · [roadmap](planning/PLAN.md)
 <!-- PROJECT:END -->
 
+## Runtime adapters
+
+Harness protocol не привязан к одной модели или одному coding agent:
+
+- Codex: `.codex/config.toml` + `.codex/agents/*.toml`;
+- Claude Code: `CLAUDE.md` + `.claude/settings.json` + `.claude/agents/*.md`.
+
+`AGENTS.md`, execution protocol, REQ/ADR/STEP и `.agents/skills/` остаются общими источниками истины.
+
 ## Документация Harness
 
 - [Начало работы](docs/harness/GETTING_STARTED.md)
@@ -20,6 +29,7 @@ VSCode extension, превращающая редактор в IDE-слой на
 - [Execution Protocol](planning/EXECUTION_PROTOCOL.md)
 - [Обновление Harness в существующем проекте](docs/harness/UPDATES.md)
 - [Агенты, модели и reasoning effort](docs/harness/AGENT_CONFIGURATION.md)
+- [Claude Code adapter](docs/harness/CLAUDE_CODE.md)
 - [Git workflow: COMMIT / PUSH / PR / SYNC](docs/harness/GIT_WORKFLOW.md)
 - [CI и Harness Integrity](docs/harness/CI.md)
 - [Skills: FIND / INSTALL / CREATE](docs/harness/SKILL_MANAGEMENT.md)

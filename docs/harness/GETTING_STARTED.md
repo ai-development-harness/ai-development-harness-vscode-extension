@@ -4,8 +4,9 @@
 
 - Git — Harness использует repository state, diff/index и Git workflow как часть deterministic gates.
 - Python 3.11+ — нужен только для `tools/harness/validate.py`; product runtime от Python не зависит.
+- Один поддерживаемый AI runtime: Codex или Claude Code. Для Claude-specific project configuration см. [`CLAUDE_CODE.md`](CLAUDE_CODE.md).
 
-В CI версия Python задаётся явно. Переписывать validator на Bash только ради устранения Python dependency не рекомендуется: validator разбирает TOML стандартным `tomllib` и выполняет структурные проверки, которые shell-скрипт без дополнительного парсера воспроизводил бы менее надёжно.
+В CI версия Python задаётся явно. Переписывать validator на Bash только ради устранения Python dependency не рекомендуется: validator разбирает TOML стандартным `tomllib`, JSON стандартным `json` и выполняет структурные проверки, которые shell-скрипт без дополнительного парсера воспроизводил бы менее надёжно.
 
 ## 1. Создай новый репозиторий
 
@@ -39,7 +40,40 @@ cp PROJECT_BRIEF.example.md PROJECT_BRIEF.local.md
 
 Не требуется заранее оформлять REQ, ADR или STEP — это задача initializer.
 
-## 4. Запусти bootstrap
+## 4. Открой репозиторий в выбранном runtime
+
+### Codex
+
+Codex использует `AGENTS.md`, `.codex/config.toml` и `.codex/agents/*.toml`.
+
+### Claude Code
+
+Claude Code использует `CLAUDE.md`, который импортирует `@AGENTS.md`, плюс `.claude/settings.json` и `.claude/agents/*.md`.
+
+Core `.agents/skills/` общие для обоих runtime adapters.
+
+## 5. Перед INIT проверь актуальность Harness
+
+Если после создания репозитория из template вышел новый Harness release, обновиться можно **до** `INIT PROJECT`:
+
+```text
+CHECK HARNESS UPDATE
+UPDATE HARNESS
+```
+
+`project.initialized: false` не блокирует эти команды. Pre-init update меняет только Harness protocol layer/lock, не выполняет bootstrap проекта и не переводит `project.initialized` в `true`. Локальный `PROJECT_BRIEF.local.md` не является managed Harness path и не перезаписывается updater-ом.
+
+После update проверь и отдельно зафиксируй maintenance diff, чтобы не смешивать его с будущим bootstrap проекта:
+
+```text
+inspect diff
+GIT CHECK
+COMMIT
+```
+
+Если доступного update нет, переходи сразу к `INIT PROJECT`.
+
+## 6. Запусти bootstrap
 
 ```text
 INIT PROJECT
@@ -61,7 +95,7 @@ Initializer должен:
 - не создавать production code;
 - не изменять Harness release/lock как часть INIT.
 
-## 5. Проверь результат
+## 7. Проверь результат
 
 Особое внимание удели:
 
@@ -79,9 +113,25 @@ STATUS PROJECT
 NEXT STEP
 ```
 
-## 6. Настрой профили агентов
+## 8. Настрой профили агентов
 
-Изучи [`AGENT_CONFIGURATION.md`](AGENT_CONFIGURATION.md) и при необходимости измени `.codex/config.toml` / `.codex/agents/*.toml`.
+Изучи [`AGENT_CONFIGURATION.md`](AGENT_CONFIGURATION.md).
+
+Для Codex при необходимости измени:
+
+```text
+.codex/config.toml
+.codex/agents/*.toml
+```
+
+Для Claude Code:
+
+```text
+.claude/settings.json
+.claude/agents/*.md
+```
+
+Если Claude model/effort нужно изменить только локально, используй `.claude/settings.local.json`, не создавая repository diff.
 
 Базовый принцип:
 
@@ -90,9 +140,9 @@ NEXT STEP
 - механические роли — более экономичный профиль;
 - reviewer должен оставаться независимым от implementer.
 
-Пользовательские изменения этих файлов сохраняются при Harness update через 3-way merge.
+Tracked runtime configs сохраняются при Harness update через 3-way merge.
 
-## 7. Зафиксируй bootstrap
+## 9. Зафиксируй bootstrap
 
 ```text
 GIT CHECK
@@ -102,7 +152,7 @@ PUSH
 
 Политика веток/PR задаётся в `.project/git-policy.toml`. Подробно: [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md).
 
-## 8. Начни разработку
+## 10. Начни разработку
 
 Ручной flow:
 
@@ -130,7 +180,7 @@ ADD STEP: <описание>
 FIND SKILL: <описание>
 ```
 
-## 9. Обновляй Harness отдельно от project work
+## 11. Обновляй Harness отдельно от project work
 
 Проверка:
 
@@ -148,10 +198,14 @@ UPDATE HARNESS
 
 ## Необязательные локальные инструкции
 
+Общие local overrides:
+
 ```bash
 cp AGENTS.local.example.md AGENTS.local.md
 ```
 
-`AGENTS.local.md` заранее игнорируется Git и читается после `AGENTS.md`. Для проектов, созданных до переименования, legacy `AGENT.local.md` временно поддерживается как fallback; при наличии обоих файлов используется `AGENTS.local.md`.
+`AGENTS.local.md` заранее игнорируется Git и читается после `AGENTS.md` согласно Harness contract.
+
+Claude-specific private instructions можно хранить в `CLAUDE.local.md`; Claude Code автоматически читает его рядом с `CLAUDE.md`. Файл также игнорируется Git.
 
 Перед INIT при необходимости настрой языки в `.project/manifest.yaml` → `language`.
