@@ -5,7 +5,7 @@
 | REQ | Название | Статус | Реализующие STEP | Evidence |
 |---|---|---|---|---|
 | REQ-001 | Command Palette с канонической командной поверхностью | Запланировано | STEP-005 | — |
-| REQ-002 | Sidebar Explorer артефактов проекта | Запланировано | STEP-006 | — |
+| REQ-002 | Sidebar Explorer артефактов проекта | Выполнено | STEP-006 | `planning/tasks/STEP-006.md`, PASS `planning/reviews/STEP-006/REVIEW-2026-09-18T1108.md` |
 | REQ-003 | Smart-редактор STEP-файлов | Запланировано | STEP-007 | — |
 | REQ-004 | Status Bar с состоянием проекта | Запланировано | STEP-008 | — |
 | REQ-005 | Terminal Integration с агентом | Запланировано | STEP-001, STEP-009 | — |

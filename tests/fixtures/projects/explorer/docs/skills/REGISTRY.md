@@ -1,0 +1,3 @@
+# Skill registry
+
+Fixture only.

@@ -10,5 +10,21 @@
   "harness.command.nextStep.title": "Следующий STEP",
   "harness.command.status.title": "Статус проекта",
   "harness.command.quickFix.title": "Быстрое исправление",
-  "harness.command.reconcile.title": "Согласовать проект (reconcile)"
+  "harness.command.reconcile.title": "Согласовать проект (reconcile)",
+  "harness.command.explorer.refresh.title": "Explorer: обновить",
+  "harness.command.explorer.filterByStatus.title": "Explorer: фильтр по статусу",
+  "harness.command.explorer.filterByType.title": "Explorer: фильтр по типу",
+  "harness.command.explorer.filterByPriority.title": "Explorer: фильтр по приоритету",
+  "harness.command.explorer.filterByRiskFlag.title": "Explorer: фильтр по risk flag",
+  "harness.command.explorer.search.title": "Explorer: поиск по ID",
+  "harness.command.explorer.clearFilters.title": "Explorer: сбросить фильтры",
+  "harness.command.explorer.openFile.title": "Explorer: открыть файл",
+  "harness.command.explorer.viewInExplorer.title": "Explorer: показать в панели Explorer",
+  "harness.command.explorer.markDone.title": "Explorer: отметить как выполненный",
+  "harness.command.explorer.flagBlocker.title": "Explorer: пометить как заблокированный",
+  "harness.command.explorer.createFollowUpStep.title": "Explorer: создать follow-up STEP",
+  "harness.command.explorer.delete.title": "Explorer: удалить",
+  "harness.view.artifacts.name": "Артефакты",
+  "harness.explorer.viewsWelcome": "Проект не выглядит инициализированным Harness-проектом.",
+  "harness.explorer.viewsWelcome.button": "Инициализировать проект"
 }
