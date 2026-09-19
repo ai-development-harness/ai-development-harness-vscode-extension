@@ -95,7 +95,8 @@ export type ManifestError =
 
 export type MarkdownParseError =
   | { kind: 'empty-content' }
-  | { kind: 'missing-heading' };
+  | { kind: 'missing-heading' }
+  | { kind: 'missing-table' };
 
 export interface StepMutationPolicy {
   allowed: string[];
@@ -148,13 +149,25 @@ export interface ReqTraceability {
 export interface ReqData {
   id: string;
   title: string;
-  status: string;
   priority: string;
   source: string;
   requirement: string;
   rationale: string;
   acceptance: string[];
   traceability: ReqTraceability;
+}
+
+/**
+ * Строка таблицы `docs/requirements/STATUS.md` — единственный canonical
+ * источник lifecycle-статуса REQ (`AGENTS.md` §10). Отдельный тип от `ReqData`
+ * (который остаётся «разобранное из `SPEC.md`»), чтобы не смешивать источники.
+ */
+export interface ReqStatusEntry {
+  id: string;
+  title: string;
+  status: string;
+  steps: string[];
+  evidence: string;
 }
 
 export interface AdrAlternative {

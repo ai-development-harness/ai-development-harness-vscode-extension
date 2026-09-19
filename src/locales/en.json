@@ -42,6 +42,7 @@
   "harness.explorer.error.flagBlockerTerminal": "\"{step}\" has terminal status \"{status}\" — it cannot be flagged as blocked.",
   "harness.explorer.error.flagBlockerEmptyReason": "The blocker reason for \"{step}\" cannot be empty.",
   "harness.explorer.error.deleteHasReferences": "\"{step}\" cannot be deleted — it is referenced by: {refs}. Use \"Cancel STEP\" instead of deleting.",
+  "harness.explorer.error.deleteReferencesUnavailable": "\"{step}\" cannot be deleted — incoming references could not be verified. Restore the project sources and try again.",
   "harness.explorer.error.stepUnreadable": "\"{step}\": could not read or parse the STEP file (renamed, deleted, or corrupted).",
   "harness.explorer.error.writeFailed": "Failed to write changes to the STEP file ({reason}).",
   "harness.explorer.confirm.markDone": "Mark \"{step}\" as done?",

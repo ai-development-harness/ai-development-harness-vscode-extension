@@ -191,6 +191,18 @@ Fixture only.
 —
 `;
 
+/**
+ * Delete guard читает все три канонических источника входящих ссылок. Пустые
+ * ADR и валидный SPEC — нормальное состояние, в отличие от недоступного
+ * источника, которое обязано fail-closed блокировать удаление (F-005).
+ */
+async function createEmptyReferenceSources(root: string): Promise<void> {
+  await mkdir(path.join(root, 'docs/requirements'), { recursive: true });
+  await mkdir(path.join(root, 'docs/adr'), { recursive: true });
+  const fixture = await readFile(path.join(__dirname, '../../fixtures/requirements/SPEC.md'), 'utf8');
+  await writeFile(path.join(root, 'docs/requirements/SPEC.md'), fixture.replaceAll('STEP-009', 'STEP-999'), 'utf8');
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -354,6 +366,7 @@ describe('STEP-014 (F-018): guard перепроверяется на свеже
   beforeEach(async () => {
     root = await mkdtemp(path.join(os.tmpdir(), 'harness-explorer-f018-'));
     await mkdir(path.join(root, 'planning/tasks'), { recursive: true });
+    await createEmptyReferenceSources(root);
   });
 
   afterEach(async () => {
@@ -517,6 +530,388 @@ describe('STEP-014 (F-018): guard перепроверяется на свеже
       { useTrash: true }
     );
     expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
+  });
+
+  it('deleteArtifact: неподдерживаемое поколение manifest блокирует удаление до диалога', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const unsupportedManifest = { ...manifest, harness: { ...manifest.harness, version: '2' } };
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, unsupportedManifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: недоступный ADR-каталог блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    await rm(path.join(root, 'docs/adr'), { recursive: true, force: true });
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: неразбираемый ADR source блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    await writeFile(path.join(root, 'docs/adr/ADR-999-invalid.md'), '', 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: нечитаемый REQ source блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    await rm(requirementsPath, { force: true });
+    await mkdir(requirementsPath);
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: неразбираемый STEP source блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const invalidPath = path.join(root, 'planning/tasks/STEP-010.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    await writeFile(invalidPath, '', 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }, { fsPath: invalidPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: STEP с ok + warning Depends on блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const damagedPath = path.join(root, 'planning/tasks/STEP-010.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    await writeFile(damagedPath, REFERENCING_STEP_TEMPLATE.replace('**Depends on:** STEP-009\n', ''), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }, { fsPath: damagedPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: повреждённое значение Depends on без STEP ID блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const damagedPath = path.join(root, 'planning/tasks/STEP-010.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    await writeFile(damagedPath, REFERENCING_STEP_TEMPLATE.replace('**Depends on:** STEP-009', '**Depends on:** STEP-XYZ'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }, { fsPath: damagedPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: смешанное корректное и повреждённое Depends on блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const damagedPath = path.join(root, 'planning/tasks/STEP-010.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    await writeFile(damagedPath, REFERENCING_STEP_TEMPLATE.replace('**Depends on:** STEP-009', '**Depends on:** STEP-005, STEPP-009'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }, { fsPath: damagedPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: повторяющаяся метка Depends on блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const damagedPath = path.join(root, 'planning/tasks/STEP-010.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    await writeFile(
+      damagedPath,
+      REFERENCING_STEP_TEMPLATE.replace('**Depends on:** STEP-009', '**Depends on:** STEP-009\n**Depends on:** —'),
+      'utf8'
+    );
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }, { fsPath: damagedPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: REQ с ok + warning Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(requirementsPath, 'utf8');
+    await writeFile(
+      requirementsPath,
+      fixture.replace('#### Traceability', '#### Связи'),
+      'utf8'
+    );
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: REQ с нераспознанной STEP-меткой в Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(requirementsPath, 'utf8');
+    await writeFile(requirementsPath, fixture.replace('- STEP: STEP-005', '- STEPP: STEP-009'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: REQ с повреждённым значением STEP в Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(requirementsPath, 'utf8');
+    await writeFile(requirementsPath, fixture.replace('- STEP: STEP-005', '- STEP: STEPP-009'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: REQ со смешанным корректным и повреждённым STEP в Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(requirementsPath, 'utf8');
+    await writeFile(requirementsPath, fixture.replace('- STEP: STEP-005', '- STEP: STEP-005, STEPP-009'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: REQ с повторяющейся STEP-меткой в Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(requirementsPath, 'utf8');
+    await writeFile(requirementsPath, fixture.replace('- STEP: STEP-005', '- STEP: STEP-009\n- STEP: —'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: REQ с повторяющейся секцией Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(requirementsPath, 'utf8');
+    await writeFile(
+      requirementsPath,
+      fixture.replace('#### Traceability', '#### Traceability\n\n- STEP: STEP-009\n- ADR: —\n\n#### Traceability'),
+      'utf8'
+    );
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: ADR с ok + warning Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const adrPath = path.join(root, 'docs/adr/ADR-999-damaged.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(path.join(__dirname, '../../fixtures/adr/ADR-001-manifest-driven-paths.md'), 'utf8');
+    await writeFile(adrPath, fixture.replace('## Traceability', '## Связи'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: ADR с нераспознанной STEP-меткой в Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const adrPath = path.join(root, 'docs/adr/ADR-999-damaged.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(path.join(__dirname, '../../fixtures/adr/ADR-001-manifest-driven-paths.md'), 'utf8');
+    await writeFile(adrPath, fixture.replace('- STEP: STEP-003', '- STEPP: STEP-009'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: ADR с повреждённым значением STEP в Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const adrPath = path.join(root, 'docs/adr/ADR-999-damaged.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(path.join(__dirname, '../../fixtures/adr/ADR-001-manifest-driven-paths.md'), 'utf8');
+    await writeFile(adrPath, fixture.replace('- STEP: STEP-003', '- STEP: STEPP-009'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: ADR со смешанным корректным и повреждённым STEP в Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const adrPath = path.join(root, 'docs/adr/ADR-999-damaged.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(path.join(__dirname, '../../fixtures/adr/ADR-001-manifest-driven-paths.md'), 'utf8');
+    await writeFile(adrPath, fixture.replace('- STEP: STEP-003', '- STEP: STEP-003, STEPP-009'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: ADR с повторяющейся STEP-меткой в Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const adrPath = path.join(root, 'docs/adr/ADR-999-damaged.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(path.join(__dirname, '../../fixtures/adr/ADR-001-manifest-driven-paths.md'), 'utf8');
+    await writeFile(adrPath, fixture.replace('- STEP: STEP-003', '- STEP: STEP-009\n- STEP: —'), 'utf8');
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: ADR с повторяющейся секцией Traceability блокирует удаление', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    const adrPath = path.join(root, 'docs/adr/ADR-999-damaged.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    const fixture = await readFile(path.join(__dirname, '../../fixtures/adr/ADR-001-manifest-driven-paths.md'), 'utf8');
+    await writeFile(
+      adrPath,
+      fixture.replace('## Traceability', '## Traceability\n\n- REQ: —\n- STEP: STEP-009\n\n## Traceability'),
+      'utf8'
+    );
+    vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).not.toHaveBeenCalled();
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('harness.explorer.error.deleteReferencesUnavailable')
+    );
+  });
+
+  it('deleteArtifact: не-ADR markdown не участвует в перечислении ADR', async () => {
+    const manifest = await loadManifest(INITIALIZED_MANIFEST);
+    const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
+    await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
+    await writeFile(path.join(root, 'docs/adr/README.md'), '', 'utf8');
+    vscode.workspace.findFiles.mockResolvedValueOnce([{ fsPath: targetPath }]).mockResolvedValueOnce([{ fsPath: targetPath }]);
+    vscode.window.showWarningMessage.mockResolvedValue(YES());
+
+    await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
+
+    expect(vscode.workspace.fs.delete).toHaveBeenCalledWith(
+      expect.objectContaining({ fsPath: targetPath }),
+      { useTrash: true }
+    );
   });
 
   it('flagBlocker: регрессия — валидный сценарий через guarded-write делает ровно одну запись', async () => {

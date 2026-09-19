@@ -57,7 +57,7 @@ export function toTreeItem(node: HarnessNode, workspaceRoot: string, i18n: I18nS
     case 'req': {
       const uri = vscode.Uri.file(path.join(workspaceRoot, node.uri));
       const item = new vscode.TreeItem(`${node.data.id} — ${node.data.title}`, vscode.TreeItemCollapsibleState.None);
-      item.description = node.data.status;
+      item.description = node.status;
       item.command = { command: 'vscode.open', title: 'Open', arguments: [uri] };
       item.contextValue = 'harness.req';
       return item;

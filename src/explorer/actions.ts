@@ -6,12 +6,12 @@ import { checkInitGuard } from '../commands/preDispatch';
 import type { ValidationResult } from '../commands/preDispatch';
 import { listStepFiles } from '../commands/stepPicker';
 import { parseExecutionProtocol } from '../parser/executionProtocol';
+import { resolveHarnessArtifactPath } from '../parser/artifactPaths';
 import { parseAdrFile, parseReqSpec, parseStepFile } from '../parser/markdownParser';
-import { AdrData, ManifestData, ReqData, StepData } from '../parser/types';
+import { AdrData, ManifestData, ParseWarning, ReqData, StepData } from '../parser/types';
 import { canDelete, canFlagBlocker, canMarkDone } from './guards';
 import { collectPriorities, EMPTY_FILTER_STATE, FilterState, hasActiveFilters } from './filter';
 import { HarnessNode } from './model';
-import { deriveAdrDir } from './paths';
 import { STATUS_ICONS } from './statusIcon';
 import { setStatus, setStatusAndBlocker } from './stepWriter';
 import { HarnessTreeDataProvider } from './treeProvider';
@@ -28,38 +28,75 @@ async function listAllSteps(workspaceRoot: string, manifest: ManifestData): Prom
   return entries.map((e) => e.data);
 }
 
-async function listAllReqs(workspaceRoot: string, manifest: ManifestData): Promise<ReqData[]> {
+/**
+ * Результат чтения входящих ссылок для destructive guard. В отличие от
+ * обычной загрузки Explorer, здесь нельзя превращать недоступный источник в
+ * пустой массив: это было бы ложным доказательством отсутствия ссылок.
+ */
+type ReferenceSource<T> = { readonly available: true; readonly data: T[] } | { readonly available: false };
+
+/**
+ * F-007: успешный результат с предупреждением не доказывает полноту входящих
+ * ссылок. Для delete guard повреждение именно reference-bearing поля означает,
+ * что источник недоступен: иначе удаление оставит неучтённую dangling-ссылку.
+ */
+function hasDeleteReferenceWarning(warnings: ParseWarning[], source: 'step' | 'req' | 'adr'): boolean {
+  return warnings.some((warning) => {
+    if (source === 'step') return warning.field === 'dependsOn';
+    if (source === 'req') return warning.field.endsWith('.traceability') || warning.field.includes('.traceability.');
+    return warning.field === 'traceability' || warning.field.startsWith('traceability.');
+  });
+}
+
+async function listStepsForDelete(workspaceRoot: string, manifest: ManifestData): Promise<ReferenceSource<StepData>> {
   try {
-    const content = await readFile(path.join(workspaceRoot, manifest.sources.requirements), 'utf8');
-    const parsed = parseReqSpec(content);
-    return parsed.ok ? parsed.value.data : [];
+    const pattern = new vscode.RelativePattern(
+      workspaceRoot,
+      path.posix.join(manifest.protocol.taskDirectory, 'STEP-*.md')
+    );
+    const uris = await vscode.workspace.findFiles(pattern);
+    const data: StepData[] = [];
+    for (const uri of uris) {
+      const content = await readFile(uri.fsPath, 'utf8');
+      const parsed = parseStepFile(content);
+      if (!parsed.ok || hasDeleteReferenceWarning(parsed.value.warnings, 'step')) return { available: false };
+      data.push(parsed.value.data);
+    }
+    return { available: true, data };
   } catch {
-    return [];
+    return { available: false };
   }
 }
 
-async function listAllAdrs(workspaceRoot: string, manifest: ManifestData): Promise<AdrData[]> {
-  const dir = path.join(workspaceRoot, deriveAdrDir(manifest));
-  let entries: string[];
+async function listReqsForDelete(workspaceRoot: string, manifest: ManifestData): Promise<ReferenceSource<ReqData>> {
   try {
-    entries = await readdir(dir);
+    const content = await readFile(path.join(workspaceRoot, manifest.sources.requirements), 'utf8');
+    const parsed = parseReqSpec(content);
+    return parsed.ok && !hasDeleteReferenceWarning(parsed.value.warnings, 'req')
+      ? { available: true, data: parsed.value.data }
+      : { available: false };
   } catch {
-    return [];
+    return { available: false };
   }
-  const results = await Promise.all(
-    entries
-      .filter((f) => f.endsWith('.md'))
-      .map(async (f) => {
-        try {
-          const content = await readFile(path.join(dir, f), 'utf8');
-          const parsed = parseAdrFile(content);
-          return parsed.ok ? parsed.value.data : undefined;
-        } catch {
-          return undefined;
-        }
-      })
-  );
-  return results.filter((r): r is AdrData => r !== undefined);
+}
+
+async function listAdrsForDelete(workspaceRoot: string, manifest: ManifestData): Promise<ReferenceSource<AdrData>> {
+  const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
+  if (!adrDirectory) return { available: false };
+
+  try {
+    const entries = await readdir(path.join(workspaceRoot, adrDirectory));
+    const data: AdrData[] = [];
+    for (const entry of entries.filter((file) => file.startsWith('ADR-') && file.endsWith('.md'))) {
+      const content = await readFile(path.join(workspaceRoot, adrDirectory, entry), 'utf8');
+      const parsed = parseAdrFile(content);
+      if (!parsed.ok || hasDeleteReferenceWarning(parsed.value.warnings, 'adr')) return { available: false };
+      data.push(parsed.value.data);
+    }
+    return { available: true, data };
+  } catch {
+    return { available: false };
+  }
 }
 
 /**
@@ -352,12 +389,15 @@ export async function deleteArtifact(
 }
 
 async function evaluateDeleteGuard(workspaceRoot: string, manifest: ManifestData, stepId: string): Promise<ValidationResult> {
-  const [allSteps, allReqs, allAdrs] = await Promise.all([
-    listAllSteps(workspaceRoot, manifest),
-    listAllReqs(workspaceRoot, manifest),
-    listAllAdrs(workspaceRoot, manifest),
+  const [steps, reqs, adrs] = await Promise.all([
+    listStepsForDelete(workspaceRoot, manifest),
+    listReqsForDelete(workspaceRoot, manifest),
+    listAdrsForDelete(workspaceRoot, manifest),
   ]);
-  return canDelete(stepId, allSteps, allReqs, allAdrs);
+  if (!steps.available || !reqs.available || !adrs.available) {
+    return { ok: false, messageKey: 'harness.explorer.error.deleteReferencesUnavailable', params: { step: stepId } };
+  }
+  return canDelete(stepId, steps.data, reqs.data, adrs.data);
 }
 
 /**

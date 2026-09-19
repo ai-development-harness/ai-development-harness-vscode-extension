@@ -1,10 +1,10 @@
 # ADR-001 — Все пути протокола читаются из `.project/manifest.yaml`, а не хардкодятся
 
-**Status:** Accepted
+**Status:** Superseded
 **Date:** 2026-09-17
 **Deciders:** initializer (INIT PROJECT)
 **Supersedes:** —
-**Superseded by:** —
+**Superseded by:** ADR-005
 
 ## Context
 

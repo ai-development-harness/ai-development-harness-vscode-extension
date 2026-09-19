@@ -1,7 +1,8 @@
 import * as path from 'node:path';
 import { parseManifest } from '../../../src/parser/yamlParser';
 import { ManifestData } from '../../../src/parser/types';
-import { GROUP_IDS, MANIFEST_REL_PATH, deriveAdrDir, resolveArtifactSources } from '../../../src/explorer/paths';
+import { resolveHarnessArtifactPath } from '../../../src/parser/artifactPaths';
+import { GROUP_IDS, MANIFEST_REL_PATH, resolveArtifactSources } from '../../../src/explorer/paths';
 
 const FIXTURES = path.join(__dirname, '../../fixtures');
 
@@ -30,6 +31,16 @@ describe('resolveArtifactSources', () => {
     expect(tasks.items).toEqual([{ kind: 'dir', relDir: manifest.protocol.taskDirectory, glob: 'STEP-*.md', parseAs: 'step' }]);
   });
 
+  it('Requirements включает derived statusFrom → docs/requirements/STATUS.md (OQ-004), не sources.status', async () => {
+    const manifest = await loadManifest();
+    const requirements = resolveArtifactSources(manifest).find((s) => s.groupId === 'requirements')!;
+    expect(requirements.items).toEqual([
+      { kind: 'file', relPath: manifest.sources.requirements, parseAs: 'req', statusFrom: 'docs/requirements/STATUS.md' },
+    ]);
+    expect(resolveHarnessArtifactPath(manifest, 'requirementsStatus')).toBe('docs/requirements/STATUS.md');
+    expect(resolveHarnessArtifactPath(manifest, 'requirementsStatus')).not.toBe(manifest.sources.status);
+  });
+
   it('Architecture включает architecture.md и производный каталог ADR (OQ-004)', async () => {
     const manifest = await loadManifest();
     const architecture = resolveArtifactSources(manifest).find((s) => s.groupId === 'architecture')!;
@@ -37,10 +48,34 @@ describe('resolveArtifactSources', () => {
       { kind: 'file', relPath: manifest.sources.architecture },
       { kind: 'dir', relDir: 'docs/adr', glob: '*.md', parseAs: 'adr' },
     ]);
-    expect(deriveAdrDir(manifest)).toBe('docs/adr');
+    expect(resolveHarnessArtifactPath(manifest, 'adrDirectory')).toBe('docs/adr');
   });
 
-  it('никакой Harness-путь не захардкожен вне paths.ts', () => {
+  it('переносит derived артефакты вместе с manifest anchors', async () => {
+    const manifest = await loadManifest();
+    const relocated = {
+      ...manifest,
+      sources: { ...manifest.sources, architecture: 'knowledge/system.md', requirements: 'knowledge/req/SPEC.md' },
+    };
+
+    expect(resolveHarnessArtifactPath(relocated, 'adrDirectory')).toBe('knowledge/adr');
+    expect(resolveHarnessArtifactPath(relocated, 'requirementsStatus')).toBe('knowledge/req/STATUS.md');
+  });
+
+  it('не создаёт derived источники для неподдерживаемого поколения Harness', async () => {
+    const manifest = await loadManifest();
+    const unsupported = { ...manifest, harness: { ...manifest.harness, version: '2' } };
+
+    expect(resolveHarnessArtifactPath(unsupported, 'adrDirectory')).toBeUndefined();
+    expect(resolveArtifactSources(unsupported).find((source) => source.groupId === 'architecture')!.items).toEqual([
+      { kind: 'file', relPath: unsupported.sources.architecture },
+    ]);
+    expect(resolveArtifactSources(unsupported).find((source) => source.groupId === 'requirements')!.items).toEqual([
+      { kind: 'file', relPath: unsupported.sources.requirements, parseAs: 'req' },
+    ]);
+  });
+
+  it('Explorer не содержит consumer-level layout knowledge Harness-артефактов', () => {
     const explorerSourceFiles = [
       'model.ts',
       'reader.ts',
