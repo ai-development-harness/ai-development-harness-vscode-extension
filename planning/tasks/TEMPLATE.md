@@ -66,6 +66,7 @@
 **Plan status:** Not planned
 **Plan revision:** —
 **Planned at:** —
+**Plan basis:** —
 
 Заполняется командой `PLAN STEP-NNN`.
 
