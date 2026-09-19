@@ -55,7 +55,6 @@ function req(overrides: Partial<ReqData>): ReqData {
   return {
     id: 'REQ-001',
     title: 't',
-    status: 'Запланировано',
     priority: 'Средний',
     source: 'brief',
     requirement: '',

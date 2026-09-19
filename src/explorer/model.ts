@@ -1,5 +1,6 @@
 import * as posix from 'node:path/posix';
 import { parseAdrFile, parseReqSpec, parseStepFile } from '../parser/markdownParser';
+import { parseReqStatus, reqStatusMap } from '../parser/requirementsStatus';
 import { AdrData, ReqData, StepData } from '../parser/types';
 import { EMPTY_FILTER_STATE, FilterState, applyStepFilters, matchesIdQuery } from './filter';
 import { ArtifactSource, GroupId } from './paths';
@@ -14,7 +15,7 @@ export type HarnessNode =
   | { kind: 'group'; id: GroupId }
   | { kind: 'file'; uri: string; label: string; groupId: GroupId }
   | { kind: 'step'; uri: string; data: StepData; groupId: GroupId }
-  | { kind: 'req'; uri: string; data: ReqData; groupId: GroupId }
+  | { kind: 'req'; uri: string; data: ReqData; status: string; groupId: GroupId }
   | { kind: 'adr'; uri: string; data: AdrData; groupId: GroupId }
   | { kind: 'message'; groupId: GroupId; messageKey: string; params?: Record<string, string> };
 
@@ -35,11 +36,35 @@ export function nodeId(node: HarnessNode): string {
   }
 }
 
+/**
+ * REQ-002/STEP-015: читает canonical источник lifecycle-статуса REQ
+ * (`AGENTS.md` §10; путь резолвится в `paths.ts`, здесь только `relPath`),
+ * один раз на загрузку группы (не по одному разу на REQ). Неудача
+ * чтения/разбора — деградация одного поля (пустой статус), не потеря
+ * артефакта: не растит `skipped`, не порождает `message`-узел `readError`.
+ */
+async function readReqStatuses(relPath: string, reader: ArtifactReader): Promise<Map<string, string>> {
+  let content: string;
+  try {
+    content = await reader.read(relPath);
+  } catch (e) {
+    console.warn(`[harness.explorer] failed to read ${relPath}:`, e);
+    return new Map();
+  }
+  const parsed = parseReqStatus(content);
+  if (!parsed.ok) {
+    console.warn(`[harness.explorer] failed to parse ${relPath} as REQ status table:`, parsed.error);
+    return new Map();
+  }
+  return reqStatusMap(parsed.value.data);
+}
+
 async function buildNodesForFile(
   groupId: GroupId,
   relPath: string,
   parseAs: 'req' | 'adr' | 'step' | undefined,
-  reader: ArtifactReader
+  reader: ArtifactReader,
+  reqStatuses?: Map<string, string>
 ): Promise<HarnessNode[] | undefined> {
   let content: string;
   try {
@@ -67,7 +92,10 @@ async function buildNodesForFile(
       console.warn(`[harness.explorer] failed to parse ${relPath} as REQ spec:`, parsed.error);
       return undefined;
     }
-    return parsed.value.data.map((data) => ({ kind: 'req', uri: relPath, data, groupId }) as const);
+    const statusByReq = reqStatuses ?? new Map<string, string>();
+    return parsed.value.data.map(
+      (data) => ({ kind: 'req', uri: relPath, data, status: statusByReq.get(data.id) ?? '', groupId }) as const
+    );
   }
   if (parseAs === 'adr') {
     const parsed = parseAdrFile(content);
@@ -99,8 +127,10 @@ export async function loadGroupChildren(
     const relPaths: string[] =
       item.kind === 'file' ? (await reader.exists(item.relPath)) ? [item.relPath] : [] : await reader.list(item.relDir, item.glob);
     const parseAs = item.parseAs;
+    const reqStatuses =
+      item.kind === 'file' && item.statusFrom !== undefined ? await readReqStatuses(item.statusFrom, reader) : undefined;
     for (const relPath of relPaths) {
-      const built = await buildNodesForFile(source.groupId, relPath, parseAs, reader);
+      const built = await buildNodesForFile(source.groupId, relPath, parseAs, reader, reqStatuses);
       if (built) nodes.push(...built);
       else skipped++;
     }

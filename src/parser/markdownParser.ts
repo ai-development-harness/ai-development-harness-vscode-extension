@@ -106,6 +106,16 @@ export function extractLabeledBullets(text: string): Map<string, string> {
   return labels;
 }
 
+/** Количество точных меток нужно для fail-closed обработки дубликатов ссылок. */
+function countBoldLabels(text: string, label: string): number {
+  return text.split(/\r?\n/).filter((line) => BOLD_LABEL_RE.exec(line.trim())?.[1].trim() === label).length;
+}
+
+/** `Map` хранит только последнее значение, поэтому дубликаты считаются до извлечения. */
+function countLabeledBullets(text: string, label: string): number {
+  return text.split(/\r?\n/).filter((line) => LABELED_BULLET_RE.exec(line)?.[1].trim() === label).length;
+}
+
 export function extractBulletItems(text: string): string[] {
   const items: string[] = [];
   for (const line of text.split(/\r?\n/)) {
@@ -118,9 +128,58 @@ export function extractBulletItems(text: string): string[] {
   return items;
 }
 
+/**
+ * Строки первой непрерывной markdown-таблицы: ячейки без внешних `|`, trim,
+ * separator-строки (`---`/`:--`) отброшены. Примитив чистый, без знания о REQ.
+ */
+export function extractTableRows(text: string): string[][] {
+  const isTableLine = (line: string) => line.trim().startsWith('|');
+  const isSeparatorLine = (line: string) =>
+    line
+      .trim()
+      .split('|')
+      .map((cell) => cell.trim())
+      .filter((cell) => cell.length > 0)
+      .every((cell) => /^:?-+:?$/.test(cell));
+  const toCells = (line: string): string[] => {
+    const trimmed = line.trim();
+    const withoutEdges = trimmed.replace(/^\|/, '').replace(/\|$/, '');
+    return withoutEdges.split('|').map((cell) => cell.trim());
+  };
+
+  const lines = text.split(/\r?\n/);
+  const rows: string[][] = [];
+  let started = false;
+  for (const line of lines) {
+    if (isTableLine(line)) {
+      started = true;
+      if (!isSeparatorLine(line)) rows.push(toCells(line));
+    } else if (started) {
+      break;
+    }
+  }
+  return rows;
+}
+
 export function extractIds(text: string, prefix: string): string[] {
   const re = new RegExp(`${prefix}-\\d+`, 'g');
   return text.match(re) ?? [];
+}
+
+/** Явные placeholders означают, что у артефакта пока нет конкретной STEP-связи. */
+function isExplicitlyEmptyStepReference(value: string): boolean {
+  return value === '—' || value === 'не запланирован' || value === 'STEP-NNN';
+}
+
+/**
+ * STEP-поля со ссылками должны быть полными для destructive guard.
+ * Частичное совпадение (например, `STEP-005, STEPP-009`) не доказывает,
+ * что все входящие ссылки распознаны, поэтому парсер возвращает warning.
+ */
+function isValidStepReference(value: string): boolean {
+  if (isExplicitlyEmptyStepReference(value)) return true;
+  const tokens = value.split(',').map((token) => token.trim());
+  return tokens.length > 0 && tokens.every((token) => /^STEP-\d+$/.test(token));
 }
 
 function splitCommaList(text: string): string[] {
@@ -180,7 +239,14 @@ export function parseStepFile(
   if (dependsOnRaw === undefined) {
     warnings.push({ field: 'dependsOn', reason: 'метка "Depends on" не найдена' });
   }
+  if (countBoldLabels(root.body, 'Depends on') > 1) {
+    warnings.push({ field: 'dependsOn', reason: 'метка "Depends on" повторяется' });
+  }
   const dependsOn = dependsOnRaw ? extractIds(dependsOnRaw, 'STEP') : [];
+  // Неполный список тоже опасен: `extractIds` мог распознать только его часть.
+  if (dependsOnRaw !== undefined && !isValidStepReference(dependsOnRaw)) {
+    warnings.push({ field: 'dependsOn', reason: 'значение "Depends on" не содержит корректный STEP ID' });
+  }
 
   const requirementsIdx = findSectionIndex(sections, 'Requirements');
   if (requirementsIdx < 0) warnings.push({ field: 'requirements', reason: 'секция "Requirements" не найдена' });
@@ -338,10 +404,8 @@ export function parseReqSpec(
     const title = match[2].trim();
 
     const labels = extractBoldLabels(section.body);
-    const status = labels.get('Статус') ?? '';
     const priority = labels.get('Приоритет') ?? '';
     const source = labels.get('Источник') ?? '';
-    if (!labels.has('Статус')) warnings.push({ field: `${id}.status`, reason: 'метка "Статус" не найдена' });
     if (!labels.has('Приоритет')) warnings.push({ field: `${id}.priority`, reason: 'метка "Приоритет" не найдена' });
     if (!labels.has('Источник')) warnings.push({ field: `${id}.source`, reason: 'метка "Источник" не найдена' });
 
@@ -350,18 +414,31 @@ export function parseReqSpec(
     const requirementSection = findChild('Requirement');
     const rationaleSection = findChild('Rationale');
     const acceptanceSection = findChild('Acceptance');
-    const traceabilitySection = findChild('Traceability');
+    const traceabilitySections = children.filter((child) => child.title === 'Traceability');
+    const traceabilitySection = traceabilitySections[0];
     if (!requirementSection) warnings.push({ field: `${id}.requirement`, reason: 'секция "Requirement" не найдена' });
     if (!rationaleSection) warnings.push({ field: `${id}.rationale`, reason: 'секция "Rationale" не найдена' });
     if (!acceptanceSection) warnings.push({ field: `${id}.acceptance`, reason: 'секция "Acceptance" не найдена' });
     if (!traceabilitySection) warnings.push({ field: `${id}.traceability`, reason: 'секция "Traceability" не найдена' });
+    if (traceabilitySections.length > 1) {
+      warnings.push({ field: `${id}.traceability`, reason: 'секция "Traceability" повторяется' });
+    }
 
     const traceLabels = traceabilitySection ? extractLabeledBullets(traceabilitySection.body) : new Map<string, string>();
+    if (traceabilitySection && !traceLabels.has('STEP')) {
+      warnings.push({ field: `${id}.traceability.step`, reason: 'метка "STEP" не найдена в секции "Traceability"' });
+    }
+    if (traceabilitySection && countLabeledBullets(traceabilitySection.body, 'STEP') > 1) {
+      warnings.push({ field: `${id}.traceability.step`, reason: 'метка "STEP" повторяется в секции "Traceability"' });
+    }
+    const traceSteps = traceLabels.get('STEP');
+    if (traceSteps !== undefined && !isValidStepReference(traceSteps)) {
+      warnings.push({ field: `${id}.traceability.step`, reason: 'значение "STEP" не содержит корректный STEP ID' });
+    }
 
     data.push({
       id,
       title,
-      status,
       priority,
       source,
       requirement: requirementSection ? requirementSection.body.trim() : '',
@@ -437,9 +514,23 @@ export function parseAdrFile(
   const compatibilityImplications = sectionTextOrWarn(sections, 'Compatibility / operational implications', warnings);
 
   const traceabilityIdx = findSectionIndex(sections, 'Traceability');
+  const traceabilitySectionCount = sections.filter((section) => section.title === 'Traceability').length;
   let traceability: AdrTraceability = { req: [], step: [] };
   if (traceabilityIdx >= 0) {
     const traceLabels = extractLabeledBullets(sections[traceabilityIdx].body);
+    if (traceabilitySectionCount > 1) {
+      warnings.push({ field: 'traceability', reason: 'секция "Traceability" повторяется' });
+    }
+    if (!traceLabels.has('STEP')) {
+      warnings.push({ field: 'traceability.step', reason: 'метка "STEP" не найдена в секции "Traceability"' });
+    }
+    if (countLabeledBullets(sections[traceabilityIdx].body, 'STEP') > 1) {
+      warnings.push({ field: 'traceability.step', reason: 'метка "STEP" повторяется в секции "Traceability"' });
+    }
+    const traceSteps = traceLabels.get('STEP');
+    if (traceSteps !== undefined && !isValidStepReference(traceSteps)) {
+      warnings.push({ field: 'traceability.step', reason: 'значение "STEP" не содержит корректный STEP ID' });
+    }
     traceability = {
       req: extractIds(traceLabels.get('REQ') ?? '', 'REQ'),
       step: extractIds(traceLabels.get('STEP') ?? '', 'STEP'),

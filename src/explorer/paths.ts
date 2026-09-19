@@ -1,4 +1,4 @@
-import * as posix from 'node:path/posix';
+import { resolveHarnessArtifactPath } from '../parser/artifactPaths';
 import { ManifestData } from '../parser/types';
 
 /**
@@ -34,7 +34,7 @@ export const GROUP_IDS: readonly GroupId[] = [
  * артефакт по ним лежит), а не угадыванием по имени файла в `model.ts`.
  */
 export type ArtifactSourceItem =
-  | { kind: 'file'; relPath: string; parseAs?: 'req' }
+  | { kind: 'file'; relPath: string; parseAs?: 'req'; statusFrom?: string }
   | { kind: 'dir'; relDir: string; glob: string; parseAs?: 'step' | 'adr' };
 
 export interface ArtifactSource {
@@ -45,26 +45,22 @@ export interface ArtifactSource {
 /** Фиксированный self-path манифеста — не объявлен внутри самого себя (ADR-001). */
 export const MANIFEST_REL_PATH = '.project/manifest.yaml';
 
-/**
- * Каталог ADR не объявлен в `.project/manifest.yaml` (см. `OQ-004`,
- * `docs/OPEN_QUESTIONS.md`). Деривация из `sources.architecture`
- * (`docs/architecture.md` → `docs/adr`) — единственная строка, которую
- * потребуется поменять будущему ADR-005; вызывающий код проверяет
- * существование каталога через `ArtifactReader`, а не считает его обязательным.
- */
-export function deriveAdrDir(manifest: ManifestData): string {
-  return posix.join(posix.dirname(manifest.sources.architecture), 'adr');
-}
-
 export function resolveArtifactSources(manifest: ManifestData): ArtifactSource[] {
+  const requirementsStatus = resolveHarnessArtifactPath(manifest, 'requirementsStatus');
+  const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
   return [
     { groupId: 'projectConfiguration', items: [{ kind: 'file', relPath: MANIFEST_REL_PATH }] },
-    { groupId: 'requirements', items: [{ kind: 'file', relPath: manifest.sources.requirements, parseAs: 'req' }] },
+    {
+      groupId: 'requirements',
+      items: [
+        { kind: 'file', relPath: manifest.sources.requirements, parseAs: 'req', ...(requirementsStatus ? { statusFrom: requirementsStatus } : {}) },
+      ],
+    },
     {
       groupId: 'architecture',
       items: [
         { kind: 'file', relPath: manifest.sources.architecture },
-        { kind: 'dir', relDir: deriveAdrDir(manifest), glob: '*.md', parseAs: 'adr' },
+        ...(adrDirectory ? [{ kind: 'dir' as const, relDir: adrDirectory, glob: '*.md', parseAs: 'adr' as const }] : []),
       ],
     },
     {

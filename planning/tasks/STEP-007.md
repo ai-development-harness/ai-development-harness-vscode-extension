@@ -4,7 +4,7 @@
 **Type:** IMPLEMENTATION
 **Приоритет:** Высокий
 **Фаза:** MVP — UI
-**Depends on:** STEP-003
+**Depends on:** STEP-003, STEP-016
 
 ## Requirements
 
@@ -13,6 +13,7 @@
 ## ADR
 
 - ADR-002
+- ADR-005
 
 ## Risk flags
 
@@ -24,7 +25,7 @@
 
 ## Context
 
-REQ-003, ADR-002 (реальный формат — labeled markdown без frontmatter, glob `STEP-*.md`, не расширение `.step.md`).
+REQ-003, ADR-002 (реальный формат — labeled markdown без frontmatter, glob `STEP-*.md`, не расширение `.step.md`). Autocomplete и поиск `ADR-NNN` используют neutral Parser/path-resolution resolver ADR-005; STEP-007 не вводит собственную derivation путей.
 
 ## Scope
 

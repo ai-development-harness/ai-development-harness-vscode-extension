@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { resolveHarnessArtifactPath } from '../parser/artifactPaths';
 import { ManifestData } from '../parser/types';
 import { GroupId } from './paths';
 
@@ -15,16 +16,26 @@ export interface WatcherHandle {
   dispose(): void;
 }
 
-interface WatchedPath {
+export interface WatchedPath {
   groupId: GroupId | 'manifest';
   relGlob: string;
 }
 
-function watchedPaths(manifest: ManifestData): WatchedPath[] {
+/**
+ * FIX STEP-015 (F-001): `STATUS.md` — фактический источник описаний REQ,
+ * поэтому он должен инвалидировать ту же группу, что и `SPEC.md`. Функция
+ * экспортирована только как чистый test seam; внешняя поверхность extension
+ * по-прежнему создаёт watcher'ы исключительно через `createWatchers`.
+ */
+export function watchedPaths(manifest: ManifestData): WatchedPath[] {
+  const requirementsStatus = resolveHarnessArtifactPath(manifest, 'requirementsStatus');
+  const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
   return [
     { groupId: 'manifest', relGlob: '.project/manifest.yaml' },
     { groupId: 'requirements', relGlob: manifest.sources.requirements },
-    { groupId: 'architecture', relGlob: `${manifest.sources.architecture.replace(/\/[^/]+$/, '')}/**/*.md` },
+    ...(requirementsStatus ? [{ groupId: 'requirements' as const, relGlob: requirementsStatus }] : []),
+    { groupId: 'architecture', relGlob: manifest.sources.architecture },
+    ...(adrDirectory ? [{ groupId: 'architecture' as const, relGlob: `${adrDirectory}/**/*.md` }] : []),
     { groupId: 'tasks', relGlob: `${manifest.protocol.taskDirectory}/**/*.md` },
     { groupId: 'roadmap', relGlob: manifest.sources.roadmap },
     { groupId: 'status', relGlob: manifest.sources.status },

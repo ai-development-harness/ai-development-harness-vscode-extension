@@ -10,7 +10,7 @@
 | STEP-004 | i18n service (RU default + EN) | IMPLEMENTATION | Средний | Выполнено | STEP-002 | REQ-006 |
 | STEP-005 | Command Palette: 11 MVP-команд + pre-dispatch валидация | IMPLEMENTATION | Критический | Выполнено | STEP-001, STEP-003, STEP-004 | REQ-001 |
 | STEP-006 | Sidebar Explorer | IMPLEMENTATION | Высокий | Выполнено | STEP-003 | REQ-002 |
-| STEP-007 | STEP File Editor (диагностика, code lens, hover, autocomplete) | IMPLEMENTATION | Высокий | Запланировано | STEP-003 | REQ-003 |
+| STEP-007 | STEP File Editor (диагностика, code lens, hover, autocomplete) | IMPLEMENTATION | Высокий | Запланировано | STEP-003, STEP-016 | REQ-003 |
 | STEP-008 | Status Bar | IMPLEMENTATION | Средний | Запланировано | STEP-003, STEP-005 | REQ-004 |
 | STEP-009 | Terminal Integration (финализация) | IMPLEMENTATION | Критический | Запланировано | STEP-001, STEP-005 | REQ-005 |
 | STEP-010 | Полная локализация реализованного UI | IMPLEMENTATION | Средний | Запланировано | STEP-004, STEP-005, STEP-006, STEP-007, STEP-008, STEP-009 | REQ-006 |
@@ -18,6 +18,8 @@
 | STEP-012 | Документационный пакет (RU/EN) | DOCUMENTATION | Средний | Запланировано | STEP-005..STEP-010 | REQ-001..REQ-006 |
 | STEP-013 | Упаковка и релиз v0.1.0 (MVP beta) | RELEASE | Высокий | Запланировано | STEP-011, STEP-012 | — |
 | STEP-014 | Закрыть TOCTOU-окно между guard'ом `canMarkDone` и записью в Explorer | BUGFIX | Средний | Выполнено | STEP-006 | REQ-002 |
+| STEP-015 | Убрать lifecycle-статус REQ из `docs/requirements/SPEC.md` | REFACTOR | Средний | Выполнено | STEP-016 | REQ-002 |
+| STEP-016 | Принять ADR-005: резолюция путей к Harness-артефактам вне manifest | ADR | Высокий | Выполнено | STEP-003, STEP-006 | REQ-002, REQ-003 |
 
 ## Не запланировано (Phase 2, деферред REQ)
 
@@ -25,4 +27,4 @@ REQ-007 (Dependency graph), REQ-008 (Health Dashboard), REQ-009 (Mutation Policy
 
 ## Незаблокированная работа прямо сейчас
 
-STEP-001..STEP-006, STEP-014 `Выполнено`. `STEP-007` зависит только от `STEP-003` — полностью разблокирован, доступен для `PLAN`. `STEP-008` (depends on STEP-003, STEP-005) и `STEP-009` (depends on STEP-001, STEP-005) тоже полностью разблокированы — их единственная незакрытая hard dependency была `STEP-005`.
+STEP-001..STEP-006 и STEP-014..STEP-016 `Выполнено`. `STEP-007`, `STEP-008` и `STEP-009` полностью разблокированы для `PLAN`.

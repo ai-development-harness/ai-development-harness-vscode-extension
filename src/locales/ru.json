@@ -42,6 +42,7 @@
   "harness.explorer.error.flagBlockerTerminal": "«{step}» имеет терминальный статус «{status}» — нельзя пометить как заблокированный.",
   "harness.explorer.error.flagBlockerEmptyReason": "Причина блокировки «{step}» не может быть пустой.",
   "harness.explorer.error.deleteHasReferences": "«{step}» нельзя удалить — на него ссылаются: {refs}. Используйте «Отменить STEP» вместо удаления.",
+  "harness.explorer.error.deleteReferencesUnavailable": "«{step}» нельзя удалить — не удалось проверить входящие ссылки. Повторите попытку после восстановления источников проекта.",
   "harness.explorer.error.stepUnreadable": "«{step}»: не удалось прочитать или разобрать STEP-файл (переименован, удалён или повреждён).",
   "harness.explorer.error.writeFailed": "Не удалось записать изменения в STEP-файл ({reason}).",
   "harness.explorer.confirm.markDone": "Отметить «{step}» как выполненный?",

@@ -33,6 +33,38 @@ describe('loadGroupChildren (fs ArtifactReader)', () => {
     expect(ids.sort()).toEqual(['REQ-001', 'REQ-002']);
   });
 
+  it('Requirements: статус REQ-узла берётся из docs/requirements/STATUS.md, а не из SPEC.md', async () => {
+    const manifest = await loadManifest();
+    const reader = createFsArtifactReader(PROJECT_ROOT);
+    const requirements = resolveArtifactSources(manifest).find((s) => s.groupId === 'requirements')!;
+    const children = await loadGroupChildren(requirements, reader);
+    const reqNodes = children.filter((n): n is Extract<HarnessNode, { kind: 'req' }> => n.kind === 'req');
+    const req001 = reqNodes.find((n) => n.data.id === 'REQ-001')!;
+    const req002 = reqNodes.find((n) => n.data.id === 'REQ-002')!;
+    // Значения фикстурной STATUS.md намеренно отличаются от прежних значений
+    // SPEC.md, чтобы доказать смену источника (`STEP-015`).
+    expect(req001.status).toBe('Частично');
+    expect(req002.status).toBe('Выполнено');
+  });
+
+  it('Requirements: неудача чтения STATUS.md деградирует в пустой статус — REQ-узлы строятся, readError не появляется, skipped не растёт', async () => {
+    const manifest = await loadManifest();
+    const baseReader = createFsArtifactReader(PROJECT_ROOT);
+    const brokenReader = {
+      ...baseReader,
+      read: async (relPath: string) => {
+        if (relPath.endsWith('docs/requirements/STATUS.md')) throw new Error('read failed');
+        return baseReader.read(relPath);
+      },
+    };
+    const requirements = resolveArtifactSources(manifest).find((s) => s.groupId === 'requirements')!;
+    const children = await loadGroupChildren(requirements, brokenReader);
+    const reqNodes = children.filter((n): n is Extract<HarnessNode, { kind: 'req' }> => n.kind === 'req');
+    expect(reqNodes.map((n) => n.data.id).sort()).toEqual(['REQ-001', 'REQ-002']);
+    expect(reqNodes.every((n) => n.status === '')).toBe(true);
+    expect(children.some((n) => n.kind === 'message' && n.messageKey === 'harness.explorer.message.readError')).toBe(false);
+  });
+
   it('Architecture: architecture.md как file-узел + ADR как adr-узел', async () => {
     const manifest = await loadManifest();
     const reader = createFsArtifactReader(PROJECT_ROOT);

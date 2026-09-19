@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { parseAdrFile, parseReqSpec, parseStepFile } from '../../../src/parser/markdownParser';
+import { extractTableRows, parseAdrFile, parseReqSpec, parseStepFile } from '../../../src/parser/markdownParser';
 
 const TASKS = path.join(__dirname, '..', '..', 'fixtures', 'tasks');
 const REQUIREMENTS = path.join(__dirname, '..', '..', 'fixtures', 'requirements');
@@ -122,6 +122,30 @@ describe('parseStepFile', () => {
     if (result.ok) return;
     expect(result.error.kind).toBe('missing-heading');
   });
+
+  it('предупреждает о смешанном корректном и повреждённом Depends on', () => {
+    const content = read(path.join(TASKS, 'STEP-002.md')).replace('**Depends on:** —', '**Depends on:** STEP-005, STEPP-009');
+
+    const result = parseStepFile(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.data.dependsOn).toEqual(['STEP-005']);
+    expect(result.value.warnings).toContainEqual(expect.objectContaining({ field: 'dependsOn' }));
+  });
+
+  it('предупреждает о повторяющейся метке Depends on', () => {
+    const content = read(path.join(TASKS, 'STEP-002.md')).replace(
+      '**Depends on:** —',
+      '**Depends on:** STEP-009\n**Depends on:** —'
+    );
+
+    const result = parseStepFile(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.warnings).toContainEqual(expect.objectContaining({ field: 'dependsOn' }));
+  });
 });
 
 describe('parseReqSpec', () => {
@@ -146,7 +170,6 @@ describe('parseReqSpec', () => {
 
     const req001 = data.find((r) => r.id === 'REQ-001')!;
     expect(req001.title).toBe('Command Palette с канонической командной поверхностью');
-    expect(req001.status).toBe('Запланировано');
     expect(req001.priority).toBe('Критический');
     expect(req001.source).toBe('brief');
     expect(req001.requirement).toContain('11 MVP-команд');
@@ -155,10 +178,9 @@ describe('parseReqSpec', () => {
     expect(req001.traceability.adr).toEqual(['ADR-003']);
 
     const req003 = data.find((r) => r.id === 'REQ-003')!;
-    expect(req003.traceability.adr).toEqual(['ADR-002']);
+    expect(req003.traceability.adr).toEqual(['ADR-002', 'ADR-005']);
 
     const req007 = data.find((r) => r.id === 'REQ-007')!;
-    expect(req007.status).toBe('Отложено');
     expect(req007.traceability.step).toEqual([]);
 
     expect(warnings).toEqual([]);
@@ -174,7 +196,7 @@ describe('parseReqSpec', () => {
     expect(result.value.warnings).toEqual([]);
   });
 
-  it('деградирует (warnings, не exception) на REQ-блоке без Статус/Источник/Rationale/Traceability', () => {
+  it('деградирует (warnings, не exception) на REQ-блоке без Источник/Rationale/Traceability', () => {
     const content = [
       '# Requirements Specification',
       '',
@@ -202,7 +224,6 @@ describe('parseReqSpec', () => {
     expect(data.length).toBe(1);
     const req = data[0];
     expect(req.id).toBe('REQ-777');
-    expect(req.status).toBe('');
     expect(req.source).toBe('');
     expect(req.priority).toBe('Средний');
     expect(req.rationale).toBe('');
@@ -211,13 +232,80 @@ describe('parseReqSpec', () => {
     expect(req.traceability).toEqual({ step: [], adr: [] });
 
     const warningFields = warnings.map((w) => w.field);
-    expect(warningFields).toContain('REQ-777.status');
+    expect(warningFields).not.toContain('REQ-777.status');
     expect(warningFields).toContain('REQ-777.source');
     expect(warningFields).toContain('REQ-777.rationale');
     expect(warningFields).toContain('REQ-777.traceability');
     expect(warningFields).not.toContain('REQ-777.priority');
     expect(warningFields).not.toContain('REQ-777.requirement');
     expect(warningFields).not.toContain('REQ-777.acceptance');
+  });
+
+  it('предупреждает о нераспознанной STEP-метке в существующей Traceability', () => {
+    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace('- STEP: STEP-005', '- STEPP: STEP-005');
+
+    const result = parseReqSpec(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.data[0].traceability.step).toEqual([]);
+    expect(result.value.warnings).toContainEqual(
+      expect.objectContaining({ field: 'REQ-001.traceability.step' })
+    );
+  });
+
+  it('предупреждает о повреждённом значении STEP в существующей Traceability', () => {
+    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace('- STEP: STEP-005', '- STEP: STEPP-005');
+
+    const result = parseReqSpec(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.data[0].traceability.step).toEqual([]);
+    expect(result.value.warnings).toContainEqual(
+      expect.objectContaining({ field: 'REQ-001.traceability.step' })
+    );
+  });
+
+  it('предупреждает о смешанном корректном и повреждённом STEP в Traceability', () => {
+    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace('- STEP: STEP-005', '- STEP: STEP-005, STEPP-009');
+
+    const result = parseReqSpec(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.data[0].traceability.step).toEqual(['STEP-005']);
+    expect(result.value.warnings).toContainEqual(
+      expect.objectContaining({ field: 'REQ-001.traceability.step' })
+    );
+  });
+
+  it('предупреждает о повторяющейся STEP-метке в Traceability', () => {
+    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace(
+      '- STEP: STEP-005',
+      '- STEP: STEP-009\n- STEP: —'
+    );
+
+    const result = parseReqSpec(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.warnings).toContainEqual(
+      expect.objectContaining({ field: 'REQ-001.traceability.step' })
+    );
+  });
+
+  it('предупреждает о повторяющейся секции Traceability', () => {
+    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace(
+      '#### Traceability',
+      '#### Traceability\n\n- STEP: —\n- ADR: —\n\n#### Traceability'
+    );
+
+    const result = parseReqSpec(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.warnings).toContainEqual(expect.objectContaining({ field: 'REQ-001.traceability' }));
   });
 
   it('даёт явную ParseError, если ни один REQ-заголовок не найден', () => {
@@ -237,10 +325,11 @@ describe('parseAdrFile', () => {
     const { data, warnings } = result.value;
     expect(data.id).toBe('ADR-001');
     expect(data.title).toBe('Все пути протокола читаются из `.project/manifest.yaml`, а не хардкодятся');
-    expect(data.status).toBe('Accepted');
+    expect(data.status).toBe('Superseded');
     expect(data.date).toBe('2026-09-17');
     expect(data.deciders).toBe('initializer (INIT PROJECT)');
     expect(data.supersedes).toBe('—');
+    expect(data.supersededBy).toBe('ADR-005');
     expect(data.context.length).toBeGreaterThan(0);
     expect(data.problem.length).toBeGreaterThan(0);
     expect(data.decision.length).toBeGreaterThan(0);
@@ -297,10 +386,93 @@ describe('parseAdrFile', () => {
     }
   });
 
+  it('предупреждает о нераспознанной STEP-метке в существующей Traceability', () => {
+    const content = read(path.join(ADR, 'ADR-001-manifest-driven-paths.md')).replace('- STEP: STEP-003', '- STEPP: STEP-003');
+
+    const result = parseAdrFile(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.data.traceability.step).toEqual([]);
+    expect(result.value.warnings).toContainEqual(expect.objectContaining({ field: 'traceability.step' }));
+  });
+
+  it('предупреждает о повреждённом значении STEP в существующей Traceability', () => {
+    const content = read(path.join(ADR, 'ADR-001-manifest-driven-paths.md')).replace('- STEP: STEP-003', '- STEP: STEPP-003');
+
+    const result = parseAdrFile(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.data.traceability.step).toEqual([]);
+    expect(result.value.warnings).toContainEqual(expect.objectContaining({ field: 'traceability.step' }));
+  });
+
+  it('предупреждает о смешанном корректном и повреждённом STEP в Traceability', () => {
+    const content = read(path.join(ADR, 'ADR-001-manifest-driven-paths.md')).replace('- STEP: STEP-003', '- STEP: STEP-003, STEPP-009');
+
+    const result = parseAdrFile(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.data.traceability.step).toEqual(['STEP-003']);
+    expect(result.value.warnings).toContainEqual(expect.objectContaining({ field: 'traceability.step' }));
+  });
+
+  it('предупреждает о повторяющейся STEP-метке в Traceability', () => {
+    const content = read(path.join(ADR, 'ADR-001-manifest-driven-paths.md')).replace(
+      '- STEP: STEP-003',
+      '- STEP: STEP-009\n- STEP: —'
+    );
+
+    const result = parseAdrFile(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.warnings).toContainEqual(expect.objectContaining({ field: 'traceability.step' }));
+  });
+
+  it('предупреждает о повторяющейся секции Traceability', () => {
+    const content = read(path.join(ADR, 'ADR-001-manifest-driven-paths.md')).replace(
+      '## Traceability',
+      '## Traceability\n\n- REQ: —\n- STEP: —\n\n## Traceability'
+    );
+
+    const result = parseAdrFile(content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.warnings).toContainEqual(expect.objectContaining({ field: 'traceability' }));
+  });
+
   it('даёт явную ParseError на пустой контент, не exception', () => {
     const result = parseAdrFile('   ');
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('empty-content');
+  });
+});
+
+describe('extractTableRows', () => {
+  it('отбрасывает separator-строку, снимает внешние `|`, тримит ячейки', () => {
+    const rows = extractTableRows(['| A | B |', '|---|---|', '| 1 | 2 |'].join('\n'));
+    expect(rows).toEqual([
+      ['A', 'B'],
+      ['1', '2'],
+    ]);
+  });
+
+  it('не падает на строке с непарным числом `|` и игнорирует всё после первой таблицы', () => {
+    const rows = extractTableRows(
+      ['текст до', '| A | B', '|---|---|', '| 1 | 2 |', '', 'текст после', '| C | D |', '|---|---|', '| 3 | 4 |'].join('\n')
+    );
+    expect(rows).toEqual([
+      ['A', 'B'],
+      ['1', '2'],
+    ]);
+  });
+
+  it('возвращает пустой массив, если таблицы нет', () => {
+    expect(extractTableRows('просто текст\nбез таблицы')).toEqual([]);
   });
 });
