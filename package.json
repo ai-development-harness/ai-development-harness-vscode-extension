@@ -19,6 +19,23 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Harness",
+      "properties": {
+        "harness.executables.codex": {
+          "type": "string",
+          "default": "",
+          "description": "Абсолютный путь к доверенному Codex CLI.",
+          "scope": "machine"
+        },
+        "harness.executables.claude": {
+          "type": "string",
+          "default": "",
+          "description": "Абсолютный путь к доверенному Claude CLI.",
+          "scope": "machine"
+        }
+      }
+    },
     "commands": [
       {
         "command": "harness.changeLanguage",
@@ -78,6 +95,11 @@
       {
         "command": "harness.reconcile",
         "title": "%harness.command.reconcile.title%",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.cancelAgent",
+        "title": "%harness.command.cancelAgent.title%",
         "category": "Harness"
       },
       {
@@ -147,6 +169,14 @@
         "command": "harness.explorer.delete",
         "title": "%harness.command.explorer.delete.title%",
         "category": "Harness"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "harness.cancelAgent",
+        "key": "ctrl+c",
+        "mac": "cmd+c",
+        "when": "harness.agent.running"
       }
     ],
     "viewsContainers": {

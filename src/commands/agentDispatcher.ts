@@ -10,24 +10,13 @@
  * ни один из 11 файлов команд (см. ADR-003 требование «одна точка регистрации»).
  */
 
-export interface AgentInvocationContext {
-  readonly protocolName: string;
-  readonly workspaceRoot: string;
-  readonly stepId?: string;
-  readonly freeText?: string;
-}
+import type { AgentDispatcher, AgentInvocationContext, AgentInvocationResult } from '../api/types';
 
-export interface AgentInvocationResult {
-  readonly ok: boolean;
-  readonly messageKey: string;
-  readonly params?: Record<string, string>;
-}
-
-export interface AgentDispatcher {
-  invoke(ctx: AgentInvocationContext): Promise<AgentInvocationResult>;
-}
+export type { AgentDispatcher, AgentInvocationContext, AgentInvocationResult } from '../api/types';
 
 export class NotImplementedAgentDispatcher implements AgentDispatcher {
+  cancel(): void {}
+
   async invoke(ctx: AgentInvocationContext): Promise<AgentInvocationResult> {
     return {
       ok: false,

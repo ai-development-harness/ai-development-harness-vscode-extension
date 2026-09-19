@@ -34,7 +34,7 @@ Fixture only.
 
 ### Allowed
 
-- нет
+- docs/requirements/SPEC.md
 
 ### Conditional
 

@@ -69,6 +69,22 @@ export class RelativePattern {
   ) {}
 }
 
+export class Range {
+  constructor(
+    public startLine: number,
+    public startCharacter: number,
+    public endLine: number,
+    public endCharacter: number
+  ) {}
+}
+
+export class WorkspaceEdit {
+  readonly replacements: Array<{ uri: { fsPath: string }; range: Range; text: string }> = [];
+  replace(uri: { fsPath: string }, range: Range, text: string): void {
+    this.replacements.push({ uri, range, text });
+  }
+}
+
 /* eslint-disable @typescript-eslint/no-var-requires */
 const nodeFs = require('node:fs');
 
@@ -91,13 +107,19 @@ export const workspace = {
   },
   findFiles: jest.fn(async () => []),
   workspaceFolders: undefined as unknown,
+  textDocuments: [] as unknown[],
+  applyEdit: jest.fn(async () => true),
 };
 
 export const window = {
+  // Reload меняет buffer через WorkspaceEdit и не должен переключать редактор.
+  // Явное поле позволяет regression-тесту проверять это свойство без GUI host.
+  activeTextEditor: undefined as unknown,
   showErrorMessage: jest.fn(),
   showWarningMessage: jest.fn(),
   showInputBox: jest.fn(),
   showQuickPick: jest.fn(),
+  createOutputChannel: jest.fn(() => ({ appendLine: jest.fn(), show: jest.fn(), dispose: jest.fn() })),
 };
 
 export const commands = {

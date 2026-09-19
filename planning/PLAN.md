@@ -12,7 +12,7 @@
 | STEP-006 | Sidebar Explorer | IMPLEMENTATION | Высокий | Выполнено | STEP-003 | REQ-002 |
 | STEP-007 | STEP File Editor (диагностика, code lens, hover, autocomplete) | IMPLEMENTATION | Высокий | Запланировано | STEP-003, STEP-016 | REQ-003 |
 | STEP-008 | Status Bar | IMPLEMENTATION | Средний | Запланировано | STEP-003, STEP-005 | REQ-004 |
-| STEP-009 | Terminal Integration (финализация) | IMPLEMENTATION | Критический | Запланировано | STEP-001, STEP-005 | REQ-005 |
+| STEP-009 | Manual handoff к agent CLI в MVP | IMPLEMENTATION | Критический | Выполнено | STEP-001, STEP-005 | REQ-005 |
 | STEP-010 | Полная локализация реализованного UI | IMPLEMENTATION | Средний | Запланировано | STEP-004, STEP-005, STEP-006, STEP-007, STEP-008, STEP-009 | REQ-006 |
 | STEP-011 | Test suite: >80% coverage + integration-тесты | IMPLEMENTATION | Высокий | Запланировано | STEP-005..STEP-010 | REQ-001..REQ-006 |
 | STEP-012 | Документационный пакет (RU/EN) | DOCUMENTATION | Средний | Запланировано | STEP-005..STEP-010 | REQ-001..REQ-006 |
@@ -20,6 +20,10 @@
 | STEP-014 | Закрыть TOCTOU-окно между guard'ом `canMarkDone` и записью в Explorer | BUGFIX | Средний | Выполнено | STEP-006 | REQ-002 |
 | STEP-015 | Убрать lifecycle-статус REQ из `docs/requirements/SPEC.md` | REFACTOR | Средний | Выполнено | STEP-016 | REQ-002 |
 | STEP-016 | Принять ADR-005: резолюция путей к Harness-артефактам вне manifest | ADR | Высокий | Выполнено | STEP-003, STEP-006 | REQ-002, REQ-003 |
+| STEP-017 | Принять ADR о безопасной границе write-invocation headless agent CLI | ADR | Критический | Выполнено | STEP-001, STEP-005 | REQ-005 |
+| STEP-018 | Принять ADR об ответственности пользователя за авторизацию agent CLI | ADR | Критический | Выполнено | STEP-017 | REQ-005 |
+| STEP-019 | Выбрать безопасный automatic executor или пересмотреть scope REQ-005 | ADR | Критический | Выполнено | STEP-017, STEP-018 | REQ-005 |
+| STEP-020 | Принять ADR о безопасном представлении free-text команд в manual handoff MVP | ADR | Критический | Выполнено | STEP-019 | REQ-005, REQ-006 |
 
 ## Не запланировано (Phase 2, деферред REQ)
 
@@ -27,4 +31,6 @@ REQ-007 (Dependency graph), REQ-008 (Health Dashboard), REQ-009 (Mutation Policy
 
 ## Незаблокированная работа прямо сейчас
 
-STEP-001..STEP-006 и STEP-014..STEP-016 `Выполнено`. `STEP-007`, `STEP-008` и `STEP-009` полностью разблокированы для `PLAN`.
+STEP-001..STEP-006 и STEP-014..STEP-020 `Выполнено`. `STEP-007` и `STEP-008`
+полностью разблокированы для `PLAN`. Следующая работа по приоритету — `STEP
+PLAN STEP-007`; он обязан использовать resolver ADR-005.

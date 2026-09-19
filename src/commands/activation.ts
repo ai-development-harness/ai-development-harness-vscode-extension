@@ -4,7 +4,7 @@ import { getI18nService } from '../locales/activation';
 import { parseManifest } from '../parser/yamlParser';
 import type { ManifestError } from '../parser/types';
 import { DispatchContext, HarnessCommand } from './baseCommand';
-import { NotImplementedAgentDispatcher } from './agentDispatcher';
+import { HarnessAgentDispatcher } from '../api/agentDispatcher';
 import { StepFileEntry, listStepFiles, pickStep } from './stepPicker';
 import { resolveDependencySteps, runPreDispatchChecks } from './preDispatch';
 import { initCommand } from './init';
@@ -37,9 +37,13 @@ const ALL_COMMANDS: HarnessCommand[] = [
  * Единственная точка использования `AgentDispatcher` (см. `baseCommand.ts`) —
  * STEP-009 подставит сюда реальную реализацию, не трогая 11 файлов команд.
  */
-const dispatcher = new NotImplementedAgentDispatcher();
+const dispatcher = new HarnessAgentDispatcher();
 
 export function registerHarnessCommands(context: vscode.ExtensionContext): void {
+  context.subscriptions.push(
+    dispatcher,
+    vscode.commands.registerCommand('harness.cancelAgent', () => dispatcher.cancel())
+  );
   for (const command of ALL_COMMANDS) {
     context.subscriptions.push(
       vscode.commands.registerCommand(command.id, (explicitArg?: string) => handleCommand(command, explicitArg))
@@ -105,6 +109,17 @@ async function handleCommand(command: HarnessCommand, explicitArg?: string): Pro
         prompt: i18n.t('harness.command.textInput.prompt', { command: command.protocolName }),
       }));
     if (freeText === undefined) return; // отмена пользователем
+    // Пустой или состоящий только из control/format input не образует CTS-команду.
+    if (!freeText.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, ' ').trim()) {
+      // Используем общий catalog blocker, чтобы Command Palette и direct dispatcher
+      // не расходились по локализации и actionable тексту. См. ADR-011 Decision 5.
+      void vscode.window.showErrorMessage(
+        i18n.t('harness.agent.preValidation', {
+          message: i18n.t('harness.agent.preValidation.invalidCommand'),
+        })
+      );
+      return;
+    }
   }
 
   const dependencySteps =

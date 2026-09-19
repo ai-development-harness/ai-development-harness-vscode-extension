@@ -4,7 +4,7 @@
 
 ## Summary
 
-Проект инициализирован (`INIT PROJECT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015 и architecture reconciliation STEP-016, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette с 11 MVP-командами + pre-dispatch валидацией (`STEP-005`), Sidebar Explorer (`STEP-006`), corrective STEP-014 (закрытие TOCTOU-окна Explorer) и corrective STEP-015 (единственный источник lifecycle-статуса REQ в `docs/requirements/STATUS.md`, fail-closed delete references) выполнены — есть рабочий toolchain (build/lint/test/CI), слой чтения manifest/STEP/REQ/ADR/EXECUTION_PROTOCOL, сервис локализации RU/EN, полная командная поверхность под `harness:` с pre-dispatch guard'ами (INIT/hard dependency/mutation boundary) и дерево артефактов проекта с фильтрами/поиском/context-menu поверх Parser layer; реальный вызов агента (STEP-009) и остальная UI-функциональность (editor/status bar) ещё не реализованы.
+Проект инициализирован (`INIT PROJECT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette с 11 MVP-командами + pre-dispatch валидацией (`STEP-005`), Sidebar Explorer (`STEP-006`), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 выполнены. ADR-010 сузил REQ-005 до manual handoff, а ADR-011 согласовал safe representation free-text command; итоговый PASS review STEP-009 подтвердил этот runtime contract. Editor/status bar остаются в будущих STEP.
 
 ## In progress
 
@@ -17,10 +17,46 @@
 ## Next unblocked work
 
 - `STEP-008` (Status Bar) — зависел от STEP-003, STEP-005, оба `Выполнено` — полностью разблокирован, доступен для `PLAN`.
-- `STEP-009` (Terminal Integration) — зависел от STEP-001, STEP-005, оба `Выполнено` — полностью разблокирован, доступен для `PLAN`. Переподтвердить перед/во время неё Codex happy-path (см. `Known drift / risks`).
 - `STEP-007` — dependency STEP-016 выполнена; доступен для `PLAN` и обязан использовать resolver ADR-005.
 
 ## Recent completed
+
+- `STEP-009` — manual-only handoff для agent-requiring команд: CTS и Mutation
+  policy pre-validation выполняются до handoff, text-command получает
+  локализованный неисполняемый safe descriptor, а команда без free text
+  сохраняет exact canonical command. PASS
+  (`planning/reviews/STEP-009/REVIEW-2026-09-19T2038Z.md`) подтвердил RU/EN
+  coverage обеих text-command family, Output Channel, warning/error sinks,
+  normal/hostile/invalid input и no-spawn. REQ-005 выполнен; automatic
+  lifecycle остаётся вне MVP и требует нового ADR.
+
+- `STEP-020` — принят ADR-011 о безопасном представлении free-text команд в
+  manual handoff MVP. Exact canonical command остаётся только для CTS
+  `input=none` и optional без текста; required и фактически переданный optional
+  text используют локализованный неисполняемый descriptor. Independent review
+  — PASS (`planning/reviews/STEP-020/REVIEW-2026-09-19T1915Z.md`), повторный
+  security review — PASS; implementation подтверждена в завершённом STEP-009.
+
+- `STEP-019` — принят ADR-010 и REQ-005 сужен до manual handoff. Capability
+  matrix разделяет vendor claims и product proof; current Codex/Claude не
+  допускаются для automatic lifecycle. После двух FIX-проходов третий свежий
+  architecture/security review — PASS
+  (`planning/reviews/STEP-019/REVIEW-2026-09-19T1815Z.md`); runtime remediation
+  подтверждена в завершённом STEP-009.
+
+- `STEP-018` — принят ADR-009: авторизация Codex/Claude CLI остаётся
+  ответственностью пользователя, а extension не передаёт
+  credential/provider/proxy/certificate environment variables. После FIX
+  traceability/projections независимый review — PASS
+  (`planning/reviews/STEP-018/REVIEW-2026-09-19T1729Z.md`); runtime drift
+  подтверждён в завершённом STEP-009.
+
+- `STEP-017` — принят ADR-008: current Codex/Claude write-mode на POSIX и
+  native Windows fail-closed переводится в manual fallback. Automatic write
+  допустим только после отдельного ADR и evidence scoped read/process-tree
+  containment. После двух document-only FIX-проходов независимый review — PASS
+  (`planning/reviews/STEP-017/REVIEW-2026-09-19T1641Z.md`); реализация manual
+  handoff подтверждена в завершённом STEP-009.
 
 - `STEP-015` — lifecycle-статус удалён из всех REQ секций `docs/requirements/SPEC.md`; Explorer читает его из нового parser `docs/requirements/STATUS.md`. ADR-005 централизует allowlisted путь `requirementsStatus`; watcher обновляет группу Requirements. Последний независимый review — `PASS` (`planning/reviews/STEP-015/REVIEW-2026-09-19T1135Z.md`) после FIX F-001..F-011, включая fail-closed delete guard для повреждённых/duplicate reference-полей. Проверки: compile, lint, build, 207 unit tests, 15 integration tests и fixture sync.
 - `STEP-016` — принят ADR-005 о manifest-first резолюции путей с allowlisted derivations `adrDirectory` и `requirementsStatus`; ADR-001 помечен `Superseded`, OQ-004 закрыт. Первый review выявил F-001 (отсутствовала STEP-007 → ADR-005 traceability), FIX синхронизировал task contract; повторный независимый review — `PASS` (`planning/reviews/STEP-016/REVIEW-2026-09-19T0951Z.md`). Production code и `.project/manifest.yaml` не менялись; runtime handoff — `FIX STEP-015`.
@@ -35,7 +71,10 @@
 ## Known drift / risks
 
 - STEP-004 зафиксировала платформенное ограничение для будущего `PLAN STEP-010`: VSCode резолвит `package.nls.*` (заголовки `contributes.commands` в Command Palette) один раз при загрузке по `vscode.env.language`, не по ручному переключению языка через `harness.changeLanguage` — обновление таких заголовков без перезапуска VSCode невозможно на уровне платформы. Не блокирует REQ-006 Acceptance для динамически строящегося UI (status bar, hover, сообщения), но ограничивает то, что STEP-010 сможет сделать «без перезапуска» именно для `contributes.*`-заголовков.
-- OQ-001 (механизм вызова агента) — `RESOLVED` (`ADR-004`), но с явно раскрытым пробелом: Codex CLI (первичный executor) подтверждён только по error-path, happy-path не проверен эмпирически (реальная квота аккаунта исчерпана во время STEP-001, доступна вновь после 2026-09-20). Переподтвердить перед/во время STEP-009.
+- OQ-001 (механизм вызова агента) — `RESOLVED` (`ADR-004`). Historical
+  read-only smoke-тесты STEP-009 подтвердили primary Codex JSONL happy-path и
+  отмену по SIGTERM; текущий MVP contract не запускает CLI, а его реализация
+  подтверждена PASS `REVIEW-2026-09-19T2038Z.md`.
 - OQ-002 (включать ли GIT CHECK/COMMIT в MVP) намеренно отложен решением ADR-003.
 - OQ-003 (семантика soft/hard dependency edges) не решена — блокирует будущую реализацию REQ-007, вне текущего MVP roadmap.
 - Исходная 9-недельная оценка срока из артефакта-ТЗ (`TZ_REVIEW_AND_PLAN.md`) не переносится в этот roadmap как обязательство.

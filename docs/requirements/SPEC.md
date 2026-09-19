@@ -129,30 +129,45 @@ Status bar показывает: статус инициализации про�
 
 ---
 
-### REQ-005 — Terminal Integration с агентом
+### REQ-005 — Manual handoff к agent CLI в MVP
 
 **Приоритет:** Критический
 **Источник:** brief
 
 #### Requirement
 
-При выполнении команды через Command Palette система собирает контекст (`EXECUTION_PROTOCOL.md`, manifest, релевантные STEP/REQ/ADR файлы, git status), передаёт его агенту для выполнения, отображает прогресс и результат в отдельном Output Channel «Harness», автоматически перезагружает изменённые файлы и предлагает следующую команду. При ошибке — три уровня обработки: pre-validation blocker, API/агент-ошибка с retry, runtime-ошибка с graceful recovery без падения.
+При команде, требующей agent lifecycle, Extension Host выполняет pre-validation
+и показывает в Output Channel «Harness» и notification локализованный manual
+handoff. Для команды без user-controlled free text handoff содержит exact
+canonical command; при required input или фактически переданном optional input
+— безопасное неисполняемое representation без исходного текста. Пользователь самостоятельно запускает agent CLI в
+контролируемом terminal и повторно вводит original intent; extension не создаёт
+agent process, не передаёт context bundle и не выдаёт ручной процесс за
+automatic execution.
 
 #### Rationale
 
-Без автоматизации пользователь вручную копирует контекст агенту — то самое трение, которое REQ-001 и общая цель проекта призваны устранить.
+До появления доказуемого automatic executor приоритетом является честная
+security boundary: extension не должна обещать isolation, containment или
+отмену чужого процесса, которых не может технически обеспечить.
 
 #### Acceptance
 
-- Терминальный вывод структурирован и читаем.
-- Auto-reload изменённых файлов не сбрасывает фокус редактора.
-- Ошибки показываются с понятным объяснением и предложением действия.
-- Команду можно прервать (Ctrl+C) без порчи состояния проекта.
+- Output Channel и user notification объясняют manual handoff без prompt,
+  secret values и лишних путей workspace.
+- Для text-command оба sink показывают локализованный safe descriptor, не raw
+  free text и не command, пригодную для повторного запуска через Harness.
+- Pre-validation blocker не запускает agent CLI и содержит понятное действие
+  для пользователя.
+- Extension не заявляет auto-reload, retry или Ctrl+C guarantee для процесса,
+  который пользователь запустил вручную.
+- Возврат automatic lifecycle возможен только по отдельному ADR с evidence
+  platform-specific isolation и process-tree containment.
 
 #### Traceability
 
-- STEP: STEP-001, STEP-009
-- ADR: не требуется (архитектурное решение фиксируется в ADR по итогам STEP-001)
+- STEP: STEP-001, STEP-009, STEP-017, STEP-018, STEP-019, STEP-020
+- ADR: ADR-004, ADR-007, ADR-008, ADR-009, ADR-010, ADR-011
 
 ---
 
@@ -177,8 +192,8 @@ Status bar показывает: статус инициализации про�
 
 #### Traceability
 
-- STEP: STEP-004, STEP-010
-- ADR: не требуется
+- STEP: STEP-004, STEP-009, STEP-010, STEP-020
+- ADR: ADR-011
 
 ---
 
