@@ -7,7 +7,7 @@ import type { ValidationResult } from '../commands/preDispatch';
 import { listStepFiles } from '../commands/stepPicker';
 import { parseExecutionProtocol } from '../parser/executionProtocol';
 import { resolveHarnessArtifactPath } from '../parser/artifactPaths';
-import { parseAdrFile, parseReqSpec, parseStepFile } from '../parser/markdownParser';
+import { parseAdrFile, parseReqFile, parseStepFile } from '../parser/markdownParser';
 import { AdrData, ManifestData, ParseWarning, ReqData, StepData } from '../parser/types';
 import { canDelete, canFlagBlocker, canMarkDone } from './guards';
 import { collectPriorities, EMPTY_FILTER_STATE, FilterState, hasActiveFilters } from './filter';
@@ -70,11 +70,15 @@ async function listStepsForDelete(workspaceRoot: string, manifest: ManifestData)
 
 async function listReqsForDelete(workspaceRoot: string, manifest: ManifestData): Promise<ReferenceSource<ReqData>> {
   try {
-    const content = await readFile(path.join(workspaceRoot, manifest.sources.requirements), 'utf8');
-    const parsed = parseReqSpec(content);
-    return parsed.ok && !hasDeleteReferenceWarning(parsed.value.warnings, 'req')
-      ? { available: true, data: parsed.value.data }
-      : { available: false };
+    const entries = await readdir(path.join(workspaceRoot, manifest.sources.requirements));
+    const data: ReqData[] = [];
+    for (const entry of entries.filter((file) => file.startsWith('REQ-') && file.endsWith('.md'))) {
+      const content = await readFile(path.join(workspaceRoot, manifest.sources.requirements, entry), 'utf8');
+      const parsed = parseReqFile(content);
+      if (!parsed.ok || hasDeleteReferenceWarning(parsed.value.warnings, 'req')) return { available: false };
+      data.push(parsed.value.data);
+    }
+    return { available: true, data };
   } catch {
     return { available: false };
   }

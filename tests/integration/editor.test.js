@@ -64,7 +64,7 @@ suite('STEP editor (STEP-007)', () => {
       const req = await locationsFor('REQ-001');
       const adr = await locationsFor('ADR-001');
       const step = await locationsFor('STEP-1');
-      assert.ok(req.some((location) => location.uri.fsPath.endsWith(path.join('docs', 'requirements', 'SPEC.md'))));
+      assert.ok(req.some((location) => location.uri.fsPath.endsWith(path.join('docs', 'requirements', 'REQ-001-editor-definition.md'))));
       assert.ok(adr.some((location) => location.uri.fsPath.endsWith(path.join('docs', 'adr', 'ADR-001-editor-fixture.md'))));
       assert.ok(step.some((location) => location.uri.fsPath.endsWith(path.join('planning', 'tasks', 'STEP-1.md'))));
     } finally {

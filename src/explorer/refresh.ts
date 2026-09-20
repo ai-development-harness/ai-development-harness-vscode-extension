@@ -24,16 +24,17 @@ export interface WatchedPath {
 
 /**
  * FIX STEP-015 (F-001): `STATUS.md` — фактический источник описаний REQ,
- * поэтому он должен инвалидировать ту же группу, что и `SPEC.md`. Функция
- * экспортирована только как чистый test seam; внешняя поверхность extension
- * по-прежнему создаёт watcher'ы исключительно через `createWatchers`.
+ * поэтому он должен инвалидировать ту же группу, что и per-file
+ * `REQ-NNN-*.md`. Функция экспортирована только как чистый test seam; внешняя
+ * поверхность extension по-прежнему создаёт watcher'ы исключительно через
+ * `createWatchers`.
  */
 export function watchedPaths(manifest: ManifestData): WatchedPath[] {
   const requirementsStatus = resolveHarnessArtifactPath(manifest, 'requirementsStatus');
   const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
   return [
     { groupId: 'manifest', relGlob: HARNESS_MANIFEST_REL_PATH },
-    { groupId: 'requirements', relGlob: manifest.sources.requirements },
+    { groupId: 'requirements', relGlob: `${manifest.sources.requirements}/REQ-*.md` },
     ...(requirementsStatus ? [{ groupId: 'requirements' as const, relGlob: requirementsStatus }] : []),
     { groupId: 'architecture', relGlob: manifest.sources.architecture },
     ...(adrDirectory ? [{ groupId: 'architecture' as const, relGlob: `${adrDirectory}/**/*.md` }] : []),

@@ -36,7 +36,7 @@ export const GROUP_IDS: readonly GroupId[] = [
  */
 export type ArtifactSourceItem =
   | { kind: 'file'; relPath: string; parseAs?: 'req'; statusFrom?: string }
-  | { kind: 'dir'; relDir: string; glob: string; parseAs?: 'step' | 'adr' };
+  | { kind: 'dir'; relDir: string; glob: string; parseAs?: 'step' | 'adr' | 'req'; statusFrom?: string };
 
 export interface ArtifactSource {
   groupId: GroupId;
@@ -54,7 +54,13 @@ export function resolveArtifactSources(manifest: ManifestData): ArtifactSource[]
     {
       groupId: 'requirements',
       items: [
-        { kind: 'file', relPath: manifest.sources.requirements, parseAs: 'req', ...(requirementsStatus ? { statusFrom: requirementsStatus } : {}) },
+        {
+          kind: 'dir',
+          relDir: manifest.sources.requirements,
+          glob: 'REQ-*.md',
+          parseAs: 'req',
+          ...(requirementsStatus ? { statusFrom: requirementsStatus } : {}),
+        },
       ],
     },
     {

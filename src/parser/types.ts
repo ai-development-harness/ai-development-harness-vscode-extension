@@ -96,7 +96,8 @@ export type ManifestError =
 export type MarkdownParseError =
   | { kind: 'empty-content' }
   | { kind: 'missing-heading' }
-  | { kind: 'missing-table' };
+  | { kind: 'missing-table' }
+  | { kind: 'multiple-headings' };
 
 export interface StepMutationPolicy {
   allowed: string[];

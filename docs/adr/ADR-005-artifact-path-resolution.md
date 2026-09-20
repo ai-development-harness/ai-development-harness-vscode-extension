@@ -4,7 +4,7 @@
 **Date:** 2026-09-19
 **Deciders:** architect (RUN STEP-016)
 **Supersedes:** ADR-001
-**Superseded by:** —
+**Superseded by:** ADR-012
 
 ## Context
 

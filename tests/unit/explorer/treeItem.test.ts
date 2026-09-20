@@ -32,7 +32,7 @@ describe('toTreeItem (req node)', () => {
   it('description === node.status (источник — STATUS.md, не ReqData из SPEC.md)', () => {
     const node: HarnessNode = {
       kind: 'req',
-      uri: 'docs/requirements/SPEC.md',
+      uri: 'docs/requirements/REQ-001-fixture.md',
       data: reqData(),
       status: 'Частично',
       groupId: 'requirements',
@@ -45,7 +45,7 @@ describe('toTreeItem (req node)', () => {
   it('пустой статус (деградация чтения STATUS.md) — description пустая строка, узел всё равно строится', () => {
     const node: HarnessNode = {
       kind: 'req',
-      uri: 'docs/requirements/SPEC.md',
+      uri: 'docs/requirements/REQ-001-fixture.md',
       data: reqData(),
       status: '',
       groupId: 'requirements',

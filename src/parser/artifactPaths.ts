@@ -10,7 +10,7 @@ export const HARNESS_MANIFEST_REL_PATH = '.harness/manifest.yaml';
 
 /**
  * Идентификаторы Harness-артефактов, которых нет в текущей schema manifest.
- * @see docs/adr/ADR-005-artifact-path-resolution.md
+ * @see docs/adr/ADR-012-requirements-status-directory-anchor.md (Supersedes ADR-005)
  */
 export type HarnessArtifactId = 'adrDirectory' | 'requirementsStatus';
 
@@ -20,10 +20,14 @@ type DeriveArtifactPath = (manifest: ManifestData) => string;
  * Совместимые правила намеренно ограничены конкретным поколением Harness.
  * Новое поколение без зарегистрированного правила не получает guessed path:
  * consumer должен локально деградировать, пока schema не станет известна.
+ *
+ * `requirementsStatus`: ADR-012 (Supersedes ADR-005) — `sources.requirements`
+ * в текущей manifest schema уже является каталогом (directory-anchor), не
+ * file-anchor, поэтому `join`, а не `dirname(...)`.
  */
 const VERSION_1_DERIVATIONS: Readonly<Record<HarnessArtifactId, DeriveArtifactPath>> = {
   adrDirectory: (manifest) => posix.join(posix.dirname(manifest.sources.architecture), 'adr'),
-  requirementsStatus: (manifest) => posix.join(posix.dirname(manifest.sources.requirements), 'STATUS.md'),
+  requirementsStatus: (manifest) => posix.join(manifest.sources.requirements, 'STATUS.md'),
 };
 
 /**

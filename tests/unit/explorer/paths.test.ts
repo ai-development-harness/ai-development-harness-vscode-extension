@@ -37,12 +37,14 @@ describe('resolveArtifactSources', () => {
     expect(tasks.items).toEqual([{ kind: 'dir', relDir: manifest.protocol.taskDirectory, glob: 'STEP-*.md', parseAs: 'step' }]);
   });
 
-  it('Requirements включает derived statusFrom → docs/requirements/STATUS.md (OQ-004), не sources.status', async () => {
+  it('Requirements — per-file directory (STEP-025) с derived statusFrom → docs/requirements/STATUS.md (OQ-004), не sources.status', async () => {
     const manifest = await loadManifest();
     const requirements = resolveArtifactSources(manifest).find((s) => s.groupId === 'requirements')!;
     expect(requirements.items).toEqual([
-      { kind: 'file', relPath: manifest.sources.requirements, parseAs: 'req', statusFrom: 'docs/requirements/STATUS.md' },
+      { kind: 'dir', relDir: manifest.sources.requirements, glob: 'REQ-*.md', parseAs: 'req', statusFrom: 'docs/requirements/STATUS.md' },
     ]);
+    // ADR-006 (Supersedes ADR-005): directory-anchor `join`, пин ровно того вычисления,
+    // которое до исправления давало несуществующий `docs/STATUS.md`.
     expect(resolveHarnessArtifactPath(manifest, 'requirementsStatus')).toBe('docs/requirements/STATUS.md');
     expect(resolveHarnessArtifactPath(manifest, 'requirementsStatus')).not.toBe(manifest.sources.status);
   });
@@ -61,7 +63,7 @@ describe('resolveArtifactSources', () => {
     const manifest = await loadManifest();
     const relocated = {
       ...manifest,
-      sources: { ...manifest.sources, architecture: 'knowledge/system.md', requirements: 'knowledge/req/SPEC.md' },
+      sources: { ...manifest.sources, architecture: 'knowledge/system.md', requirements: 'knowledge/req' },
     };
 
     expect(resolveHarnessArtifactPath(relocated, 'adrDirectory')).toBe('knowledge/adr');
@@ -77,7 +79,7 @@ describe('resolveArtifactSources', () => {
       { kind: 'file', relPath: unsupported.sources.architecture },
     ]);
     expect(resolveArtifactSources(unsupported).find((source) => source.groupId === 'requirements')!.items).toEqual([
-      { kind: 'file', relPath: unsupported.sources.requirements, parseAs: 'req' },
+      { kind: 'dir', relDir: unsupported.sources.requirements, glob: 'REQ-*.md', parseAs: 'req' },
     ]);
   });
 

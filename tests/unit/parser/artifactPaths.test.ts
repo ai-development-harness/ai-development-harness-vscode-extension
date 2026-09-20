@@ -9,7 +9,7 @@ const manifest: ManifestData = {
     testNames: 'ru', fixtures: 'ru', githubTemplates: 'ru', releaseNotes: 'ru',
   },
   sources: {
-    localBrief: 'PROJECT_BRIEF.local.md', projectOverview: 'docs/PROJECT.md', requirements: 'nested/requirements/SPEC.md',
+    localBrief: 'PROJECT_BRIEF.local.md', projectOverview: 'docs/PROJECT.md', requirements: 'nested/requirements',
     architecture: 'nested/architecture.md', roadmap: 'planning/PLAN.md', status: 'planning/STATUS.md',
   },
   protocol: {
@@ -31,7 +31,7 @@ describe('HARNESS_MANIFEST_REL_PATH', () => {
 });
 
 describe('resolveHarnessArtifactPath', () => {
-  it('резолвит оба allowlisted артефакта поколения 1 от их manifest anchors', () => {
+  it('резолвит оба allowlisted артефакта поколения 1 от их manifest anchors (ADR-006: requirements — directory-anchor)', () => {
     expect(resolveHarnessArtifactPath(manifest, 'adrDirectory')).toBe('nested/adr');
     expect(resolveHarnessArtifactPath(manifest, 'requirementsStatus')).toBe('nested/requirements/STATUS.md');
   });

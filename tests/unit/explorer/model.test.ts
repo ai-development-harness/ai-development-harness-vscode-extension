@@ -24,7 +24,7 @@ describe('loadGroupChildren (fs ArtifactReader)', () => {
     expect(ids.sort()).toEqual(['STEP-001', 'STEP-002', 'STEP-003']);
   });
 
-  it('Requirements: строит req-узлы из SPEC.md (несколько REQ в одном файле)', async () => {
+  it('Requirements: строит req-узлы из per-file REQ-NNN-*.md каталога docs/requirements', async () => {
     const manifest = await loadManifest();
     const reader = createFsArtifactReader(PROJECT_ROOT);
     const requirements = resolveArtifactSources(manifest).find((s) => s.groupId === 'requirements')!;

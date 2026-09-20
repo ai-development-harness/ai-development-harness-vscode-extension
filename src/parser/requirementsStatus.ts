@@ -4,7 +4,7 @@ import { MarkdownParseError, ParseWarning, ReqStatusEntry, Result, err, ok } fro
 /**
  * `docs/requirements/STATUS.md` — единственный canonical источник
  * lifecycle-статуса REQ (`AGENTS.md` §10). Отдельный артефакт от
- * `parseReqSpec` (ADR-002: семейство labeled-markdown парсеров), т.к. это
+ * `parseReqFile` (ADR-002: семейство labeled-markdown парсеров), т.к. это
  * markdown-таблица, а не bold-метки внутри секций.
  *
  * Колонки резолвятся по имени заголовка (не по индексу), чтобы пережить

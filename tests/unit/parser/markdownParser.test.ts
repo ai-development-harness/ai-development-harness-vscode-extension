@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { extractTableRows, parseAdrFile, parseReqSpec, parseStepFile } from '../../../src/parser/markdownParser';
+import { extractTableRows, parseAdrFile, parseReqFile, parseStepFile } from '../../../src/parser/markdownParser';
 
 const TASKS = path.join(__dirname, '..', '..', 'fixtures', 'tasks');
 const REQUIREMENTS = path.join(__dirname, '..', '..', 'fixtures', 'requirements');
@@ -148,88 +148,88 @@ describe('parseStepFile', () => {
   });
 });
 
-describe('parseReqSpec', () => {
-  it('извлекает все REQ-001..010 из реального docs/requirements/SPEC.md', () => {
-    const result = parseReqSpec(read(path.join(REQUIREMENTS, 'SPEC.md')));
+describe('parseReqFile', () => {
+  it('извлекает все поля self-contained per-file фикстуры REQ-001-fixture-full.md', () => {
+    const result = parseReqFile(read(path.join(REQUIREMENTS, 'REQ-001-fixture-full.md')));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
     const { data, warnings } = result.value;
-    expect(data.map((r) => r.id)).toEqual([
-      'REQ-001',
-      'REQ-002',
-      'REQ-003',
-      'REQ-004',
-      'REQ-005',
-      'REQ-006',
-      'REQ-007',
-      'REQ-008',
-      'REQ-009',
-      'REQ-010',
-    ]);
-
-    const req001 = data.find((r) => r.id === 'REQ-001')!;
-    expect(req001.title).toBe('Command Palette с канонической командной поверхностью');
-    expect(req001.priority).toBe('Критический');
-    expect(req001.source).toBe('brief');
-    expect(req001.requirement).toContain('11 MVP-команд');
-    expect(req001.acceptance.length).toBe(4);
-    expect(req001.traceability.step).toEqual(['STEP-005']);
-    expect(req001.traceability.adr).toEqual(['ADR-003']);
-
-    const req003 = data.find((r) => r.id === 'REQ-003')!;
-    expect(req003.traceability.adr).toEqual(['ADR-002', 'ADR-005']);
-
-    const req007 = data.find((r) => r.id === 'REQ-007')!;
-    expect(req007.traceability.step).toEqual([]);
-
+    expect(data.id).toBe('REQ-001');
+    expect(data.title).toBe('Command Palette с канонической командной поверхностью');
+    expect(data.priority).toBe('Критический');
+    expect(data.source).toBe('brief');
+    expect(data.requirement).toContain('11 MVP-команд');
+    expect(data.acceptance.length).toBe(4);
+    expect(data.traceability.step).toEqual(['STEP-005']);
+    expect(data.traceability.adr).toEqual(['ADR-003']);
     expect(warnings).toEqual([]);
   });
 
-  it('извлекает поля из реального docs/requirements/TEMPLATE.md', () => {
-    const result = parseReqSpec(read(path.join(REQUIREMENTS, 'TEMPLATE.md')));
+  it('извлекает поля из реального docs/requirements/TEMPLATE.md (per-file layout, один REQ)', () => {
+    const result = parseReqFile(read(path.join(REQUIREMENTS, 'TEMPLATE.md')));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.value.data.length).toBe(1);
-    expect(result.value.data[0].id).toBe('REQ-NNN');
+    expect(result.value.data.id).toBe('REQ-NNN');
     expect(result.value.warnings).toEqual([]);
   });
 
-  it('деградирует (warnings, не exception) на REQ-блоке без Источник/Rationale/Traceability', () => {
+  it('index SPEC.md (без REQ-заголовка) никогда не становится REQ-узлом: missing-heading', () => {
+    const result = parseReqFile(read(path.join(REQUIREMENTS, 'SPEC.md')));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('missing-heading');
+  });
+
+  it('даёт явную ParseError, если ни один REQ-заголовок не найден', () => {
+    const result = parseReqFile('# Просто заголовок без REQ');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('missing-heading');
+  });
+
+  it('даёт явную ParseError multiple-headings на файле с двумя REQ-заголовками (не деградирует до первого)', () => {
     const content = [
-      '# Requirements Specification',
-      '',
-      '## Требования',
-      '',
-      '### REQ-777 — Синтетический REQ без Rationale и Traceability',
+      '# REQ-001 — Первый',
       '',
       '**Приоритет:** Средний',
+      '**Источник:** fixture',
       '',
-      '#### Requirement',
+      '## Requirement',
       '',
-      'Текст requirement.',
+      'Первый.',
       '',
-      '#### Acceptance',
+      '# REQ-002 — Второй',
       '',
-      '- test',
+      '**Приоритет:** Средний',
+      '**Источник:** fixture',
+      '',
+      '## Requirement',
+      '',
+      'Второй.',
       '',
     ].join('\n');
 
-    const result = parseReqSpec(content);
+    const result = parseReqFile(content);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe('multiple-headings');
+  });
+
+  it('деградирует (warnings, не exception) на REQ-файле без Источник/Rationale/Traceability', () => {
+    const result = parseReqFile(read(path.join(REQUIREMENTS, 'REQ-777-fixture-partial.md')));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
     const { data, warnings } = result.value;
-    expect(data.length).toBe(1);
-    const req = data[0];
-    expect(req.id).toBe('REQ-777');
-    expect(req.source).toBe('');
-    expect(req.priority).toBe('Средний');
-    expect(req.rationale).toBe('');
-    expect(req.requirement).toContain('Текст requirement.');
-    expect(req.acceptance).toEqual(['test']);
-    expect(req.traceability).toEqual({ step: [], adr: [] });
+    expect(data.id).toBe('REQ-777');
+    expect(data.source).toBe('');
+    expect(data.priority).toBe('Средний');
+    expect(data.rationale).toBe('');
+    expect(data.requirement).toContain('Текст requirement.');
+    expect(data.acceptance).toEqual(['test']);
+    expect(data.traceability).toEqual({ step: [], adr: [] });
 
     const warningFields = warnings.map((w) => w.field);
     expect(warningFields).not.toContain('REQ-777.status');
@@ -242,51 +242,51 @@ describe('parseReqSpec', () => {
   });
 
   it('предупреждает о нераспознанной STEP-метке в существующей Traceability', () => {
-    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace('- STEP: STEP-005', '- STEPP: STEP-005');
+    const content = read(path.join(REQUIREMENTS, 'REQ-001-fixture-full.md')).replace('- STEP: STEP-005', '- STEPP: STEP-005');
 
-    const result = parseReqSpec(content);
+    const result = parseReqFile(content);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.value.data[0].traceability.step).toEqual([]);
+    expect(result.value.data.traceability.step).toEqual([]);
     expect(result.value.warnings).toContainEqual(
       expect.objectContaining({ field: 'REQ-001.traceability.step' })
     );
   });
 
   it('предупреждает о повреждённом значении STEP в существующей Traceability', () => {
-    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace('- STEP: STEP-005', '- STEP: STEPP-005');
+    const content = read(path.join(REQUIREMENTS, 'REQ-001-fixture-full.md')).replace('- STEP: STEP-005', '- STEP: STEPP-005');
 
-    const result = parseReqSpec(content);
+    const result = parseReqFile(content);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.value.data[0].traceability.step).toEqual([]);
+    expect(result.value.data.traceability.step).toEqual([]);
     expect(result.value.warnings).toContainEqual(
       expect.objectContaining({ field: 'REQ-001.traceability.step' })
     );
   });
 
   it('предупреждает о смешанном корректном и повреждённом STEP в Traceability', () => {
-    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace('- STEP: STEP-005', '- STEP: STEP-005, STEPP-009');
+    const content = read(path.join(REQUIREMENTS, 'REQ-001-fixture-full.md')).replace('- STEP: STEP-005', '- STEP: STEP-005, STEPP-009');
 
-    const result = parseReqSpec(content);
+    const result = parseReqFile(content);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.value.data[0].traceability.step).toEqual(['STEP-005']);
+    expect(result.value.data.traceability.step).toEqual(['STEP-005']);
     expect(result.value.warnings).toContainEqual(
       expect.objectContaining({ field: 'REQ-001.traceability.step' })
     );
   });
 
   it('предупреждает о повторяющейся STEP-метке в Traceability', () => {
-    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace(
+    const content = read(path.join(REQUIREMENTS, 'REQ-001-fixture-full.md')).replace(
       '- STEP: STEP-005',
       '- STEP: STEP-009\n- STEP: —'
     );
 
-    const result = parseReqSpec(content);
+    const result = parseReqFile(content);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
@@ -296,23 +296,23 @@ describe('parseReqSpec', () => {
   });
 
   it('предупреждает о повторяющейся секции Traceability', () => {
-    const content = read(path.join(REQUIREMENTS, 'SPEC.md')).replace(
-      '#### Traceability',
-      '#### Traceability\n\n- STEP: —\n- ADR: —\n\n#### Traceability'
+    const content = read(path.join(REQUIREMENTS, 'REQ-001-fixture-full.md')).replace(
+      '## Traceability',
+      '## Traceability\n\n- STEP: —\n- ADR: —\n\n## Traceability'
     );
 
-    const result = parseReqSpec(content);
+    const result = parseReqFile(content);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
     expect(result.value.warnings).toContainEqual(expect.objectContaining({ field: 'REQ-001.traceability' }));
   });
 
-  it('даёт явную ParseError, если ни один REQ-заголовок не найден', () => {
-    const result = parseReqSpec('# Просто заголовок без REQ');
+  it('даёт явную ParseError на пустой контент, не exception', () => {
+    const result = parseReqFile('');
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error.kind).toBe('missing-heading');
+    expect(result.error.kind).toBe('empty-content');
   });
 });
 

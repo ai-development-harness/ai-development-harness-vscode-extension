@@ -21,7 +21,7 @@ language:
 sources:
   localBrief: PROJECT_BRIEF.local.md
   projectOverview: docs/PROJECT.md
-  requirements: docs/requirements/SPEC.md
+  requirements: docs/requirements
   architecture: docs/architecture.md
   roadmap: planning/PLAN.md
   status: planning/STATUS.md

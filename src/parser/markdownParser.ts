@@ -376,14 +376,75 @@ function extractReviewStatus(sections: MdSection[], warnings: ParseWarning[]): S
 }
 
 // ---------------------------------------------------------------------------
-// docs/requirements/SPEC.md (несколько REQ-NNN в одном файле)
+// docs/requirements/REQ-NNN-*.md (один REQ на файл, docs/requirements/TEMPLATE.md)
 // ---------------------------------------------------------------------------
 
 const REQ_TITLE_RE = /^(REQ-[A-Za-z0-9]+)\s*—\s*(.*)$/;
 
-export function parseReqSpec(
+function readReqAt(sections: MdSection[], idx: number, warnings: ParseWarning[]): ReqData {
+  const section = sections[idx];
+  const match = REQ_TITLE_RE.exec(section.title)!;
+  const id = match[1];
+  const title = match[2].trim();
+
+  const labels = extractBoldLabels(section.body);
+  const priority = labels.get('Приоритет') ?? '';
+  const source = labels.get('Источник') ?? '';
+  if (!labels.has('Приоритет')) warnings.push({ field: `${id}.priority`, reason: 'метка "Приоритет" не найдена' });
+  if (!labels.has('Источник')) warnings.push({ field: `${id}.source`, reason: 'метка "Источник" не найдена' });
+
+  const children = childSections(sections, idx);
+  const findChild = (t: string) => children.find((c) => c.title === t);
+  const requirementSection = findChild('Requirement');
+  const rationaleSection = findChild('Rationale');
+  const acceptanceSection = findChild('Acceptance');
+  const traceabilitySections = children.filter((child) => child.title === 'Traceability');
+  const traceabilitySection = traceabilitySections[0];
+  if (!requirementSection) warnings.push({ field: `${id}.requirement`, reason: 'секция "Requirement" не найдена' });
+  if (!rationaleSection) warnings.push({ field: `${id}.rationale`, reason: 'секция "Rationale" не найдена' });
+  if (!acceptanceSection) warnings.push({ field: `${id}.acceptance`, reason: 'секция "Acceptance" не найдена' });
+  if (!traceabilitySection) warnings.push({ field: `${id}.traceability`, reason: 'секция "Traceability" не найдена' });
+  if (traceabilitySections.length > 1) {
+    warnings.push({ field: `${id}.traceability`, reason: 'секция "Traceability" повторяется' });
+  }
+
+  const traceLabels = traceabilitySection ? extractLabeledBullets(traceabilitySection.body) : new Map<string, string>();
+  if (traceabilitySection && !traceLabels.has('STEP')) {
+    warnings.push({ field: `${id}.traceability.step`, reason: 'метка "STEP" не найдена в секции "Traceability"' });
+  }
+  if (traceabilitySection && countLabeledBullets(traceabilitySection.body, 'STEP') > 1) {
+    warnings.push({ field: `${id}.traceability.step`, reason: 'метка "STEP" повторяется в секции "Traceability"' });
+  }
+  const traceSteps = traceLabels.get('STEP');
+  if (traceSteps !== undefined && !isValidStepReference(traceSteps)) {
+    warnings.push({ field: `${id}.traceability.step`, reason: 'значение "STEP" не содержит корректный STEP ID' });
+  }
+
+  return {
+    id,
+    title,
+    priority,
+    source,
+    requirement: requirementSection ? requirementSection.body.trim() : '',
+    rationale: rationaleSection ? rationaleSection.body.trim() : '',
+    acceptance: acceptanceSection ? extractBulletItems(acceptanceSection.body) : [],
+    traceability: {
+      step: extractIds(traceLabels.get('STEP') ?? '', 'STEP'),
+      adr: extractIds(traceLabels.get('ADR') ?? '', 'ADR'),
+    },
+  };
+}
+
+/**
+ * per-file layout: один `docs/requirements/REQ-NNN-*.md` — один REQ (ADR-002
+ * labeled markdown, без YAML frontmatter). Ноль совпадающих заголовков
+ * защищает index `SPEC.md`/`STATUS.md`/`TEMPLATE.md` от разбора как REQ; более
+ * одного заголовка — `multiple-headings` вместо тихой деградации до первого,
+ * чтобы delete-guard не терял dangling-ссылку на второй REQ в файле.
+ */
+export function parseReqFile(
   content: string
-): Result<{ data: ReqData[]; warnings: ParseWarning[] }, MarkdownParseError> {
+): Result<{ data: ReqData; warnings: ParseWarning[] }, MarkdownParseError> {
   if (content.trim().length === 0) return err({ kind: 'empty-content' });
   const sections = splitSections(content);
   if (sections.length === 0) return err({ kind: 'missing-heading' });
@@ -393,64 +454,10 @@ export function parseReqSpec(
     return acc;
   }, []);
   if (reqIndices.length === 0) return err({ kind: 'missing-heading' });
+  if (reqIndices.length > 1) return err({ kind: 'multiple-headings' });
 
   const warnings: ParseWarning[] = [];
-  const data: ReqData[] = [];
-
-  for (const idx of reqIndices) {
-    const section = sections[idx];
-    const match = REQ_TITLE_RE.exec(section.title)!;
-    const id = match[1];
-    const title = match[2].trim();
-
-    const labels = extractBoldLabels(section.body);
-    const priority = labels.get('Приоритет') ?? '';
-    const source = labels.get('Источник') ?? '';
-    if (!labels.has('Приоритет')) warnings.push({ field: `${id}.priority`, reason: 'метка "Приоритет" не найдена' });
-    if (!labels.has('Источник')) warnings.push({ field: `${id}.source`, reason: 'метка "Источник" не найдена' });
-
-    const children = childSections(sections, idx);
-    const findChild = (t: string) => children.find((c) => c.title === t);
-    const requirementSection = findChild('Requirement');
-    const rationaleSection = findChild('Rationale');
-    const acceptanceSection = findChild('Acceptance');
-    const traceabilitySections = children.filter((child) => child.title === 'Traceability');
-    const traceabilitySection = traceabilitySections[0];
-    if (!requirementSection) warnings.push({ field: `${id}.requirement`, reason: 'секция "Requirement" не найдена' });
-    if (!rationaleSection) warnings.push({ field: `${id}.rationale`, reason: 'секция "Rationale" не найдена' });
-    if (!acceptanceSection) warnings.push({ field: `${id}.acceptance`, reason: 'секция "Acceptance" не найдена' });
-    if (!traceabilitySection) warnings.push({ field: `${id}.traceability`, reason: 'секция "Traceability" не найдена' });
-    if (traceabilitySections.length > 1) {
-      warnings.push({ field: `${id}.traceability`, reason: 'секция "Traceability" повторяется' });
-    }
-
-    const traceLabels = traceabilitySection ? extractLabeledBullets(traceabilitySection.body) : new Map<string, string>();
-    if (traceabilitySection && !traceLabels.has('STEP')) {
-      warnings.push({ field: `${id}.traceability.step`, reason: 'метка "STEP" не найдена в секции "Traceability"' });
-    }
-    if (traceabilitySection && countLabeledBullets(traceabilitySection.body, 'STEP') > 1) {
-      warnings.push({ field: `${id}.traceability.step`, reason: 'метка "STEP" повторяется в секции "Traceability"' });
-    }
-    const traceSteps = traceLabels.get('STEP');
-    if (traceSteps !== undefined && !isValidStepReference(traceSteps)) {
-      warnings.push({ field: `${id}.traceability.step`, reason: 'значение "STEP" не содержит корректный STEP ID' });
-    }
-
-    data.push({
-      id,
-      title,
-      priority,
-      source,
-      requirement: requirementSection ? requirementSection.body.trim() : '',
-      rationale: rationaleSection ? rationaleSection.body.trim() : '',
-      acceptance: acceptanceSection ? extractBulletItems(acceptanceSection.body) : [],
-      traceability: {
-        step: extractIds(traceLabels.get('STEP') ?? '', 'STEP'),
-        adr: extractIds(traceLabels.get('ADR') ?? '', 'ADR'),
-      },
-    });
-  }
-
+  const data = readReqAt(sections, reqIndices[0], warnings);
   return ok({ data, warnings });
 }
 

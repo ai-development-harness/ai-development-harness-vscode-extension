@@ -167,7 +167,12 @@ export function registerValidationListeners(
 /** Все filesystem watchers получают STEP glob только из manifest, включая custom layout. */
 export function stepEditorWatchPatterns(manifest: ManifestData): string[] {
   const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
-  return [manifest.sources.requirements, `${manifest.protocol.taskDirectory}/STEP-*.md`, HARNESS_MANIFEST_REL_PATH, ...(adrDirectory ? [`${adrDirectory}/ADR-*.md`] : [])];
+  return [
+    `${manifest.sources.requirements}/REQ-*.md`,
+    `${manifest.protocol.taskDirectory}/STEP-*.md`,
+    HARNESS_MANIFEST_REL_PATH,
+    ...(adrDirectory ? [`${adrDirectory}/ADR-*.md`] : []),
+  ];
 }
 
 /**
@@ -302,12 +307,11 @@ async function refreshIndex(root: string): Promise<{ manifest: ManifestData; ind
 }
 
 export async function loadIndex(root: string, manifest: ManifestData): Promise<StepEditorIndex> {
-  const requirementsPath = path.join(root, manifest.sources.requirements);
-  const requirements = await readFileSafely(requirementsPath);
+  const requirements = await readMarkdownDirectory(path.join(root, manifest.sources.requirements), /^REQ-\d+.*\.md$/);
   const steps = await readMarkdownDirectory(path.join(root, manifest.protocol.taskDirectory), /^STEP-\d+.*\.md$/);
   const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
   const adrs = adrDirectory ? await readMarkdownDirectory(path.join(root, adrDirectory), /^ADR-\d+.*\.md$/) : [];
-  return createEditorIndex({ requirements, requirementsUri: vscode.Uri.file(requirementsPath), steps, adrs });
+  return createEditorIndex({ requirements, steps, adrs });
 }
 
 async function readFileSafely(file: string): Promise<string | undefined> { try { return await fs.readFile(file, 'utf8'); } catch { return undefined; } }

@@ -17,7 +17,7 @@ describe('parseManifest', () => {
     expect(result.value.language.default).toBe('ru');
     expect(result.value.protocol.file).toBe('planning/EXECUTION_PROTOCOL.md');
     expect(result.value.protocol.taskDirectory).toBe('planning/tasks');
-    expect(result.value.sources.requirements).toBe('docs/requirements/SPEC.md');
+    expect(result.value.sources.requirements).toBe('docs/requirements');
     expect(result.value.sources.roadmap).toBe('planning/PLAN.md');
     expect(result.value.repository.gitPolicy).toBe('.harness/git-policy.toml');
     expect(result.value.repository.harnessValidation).toBe('tools/harness/validate.py');
@@ -33,7 +33,7 @@ describe('parseManifest', () => {
     expect(result.value.project.initializedAt).toBeNull();
     // Пути протокола/источников не зависят от project.initialized — тот же контракт.
     expect(result.value.protocol.file).toBe('planning/EXECUTION_PROTOCOL.md');
-    expect(result.value.sources.requirements).toBe('docs/requirements/SPEC.md');
+    expect(result.value.sources.requirements).toBe('docs/requirements');
   });
 
   it('даёт явную ошибку NotFound на отсутствующий манифест, не exception', async () => {

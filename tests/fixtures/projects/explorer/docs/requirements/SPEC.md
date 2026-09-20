@@ -1,5 +1,7 @@
 # Requirements
 
+> Projection-индекс. Определение, rationale, acceptance и traceability каждого REQ хранятся только в отдельном `REQ-NNN-*.md`; lifecycle-статус — только в `STATUS.md`.
+
 ## Статусы
 
 - `Запланировано`
@@ -10,48 +12,7 @@
 
 ## Требования
 
-### REQ-001 — Фикстура requirement A
-
-**Приоритет:** Высокий
-**Источник:** fixture
-
-#### Requirement
-
-Fixture only.
-
-#### Rationale
-
-Fixture only.
-
-#### Acceptance
-
-- fixture only
-
-#### Traceability
-
-- STEP: STEP-001
-- ADR: не требуется
-
----
-
-### REQ-002 — Фикстура requirement B
-
-**Приоритет:** Средний
-**Источник:** fixture
-
-#### Requirement
-
-Fixture only.
-
-#### Rationale
-
-Fixture only.
-
-#### Acceptance
-
-- fixture only
-
-#### Traceability
-
-- STEP: STEP-003
-- ADR: не требуется
+| REQ | Название | Canonical file |
+|---|---|---|
+| REQ-001 | Фикстура requirement A | REQ-001-fixture-a.md |
+| REQ-002 | Фикстура requirement B | REQ-002-fixture-b.md |
