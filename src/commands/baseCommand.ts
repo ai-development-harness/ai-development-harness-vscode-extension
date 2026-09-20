@@ -33,7 +33,7 @@ export interface HarnessCommand {
 
 /**
  * Общая реализация `dispatch()` для 9 из 11 команд, которым требуется
- * фактический вызов агента. `STATUS PROJECT`/`NEXT STEP` её не используют —
+ * фактический вызов агента. `PROJECT STATUS`/`STEP NEXT` её не используют —
  * их семантика полностью покрывается Parser layer (см. `status.ts`/`nextStep.ts`).
  */
 export async function dispatchViaAgent(ctx: DispatchContext, protocolName: string): Promise<void> {

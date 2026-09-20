@@ -5,7 +5,7 @@ import { selectNextStep } from './nextStepSelector';
 
 export const nextStepCommand: HarnessCommand = {
   id: 'harness.nextStep',
-  protocolName: 'NEXT STEP',
+  protocolName: 'STEP NEXT',
   inputKind: 'none',
   initGuard: 'none',
   stepScoped: false,

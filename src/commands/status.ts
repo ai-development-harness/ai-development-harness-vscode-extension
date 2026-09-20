@@ -5,7 +5,7 @@ import { computeProjectStatus, formatStatusSummary } from './projectStatus';
 
 export const statusCommand: HarnessCommand = {
   id: 'harness.status',
-  protocolName: 'STATUS PROJECT',
+  protocolName: 'PROJECT STATUS',
   inputKind: 'none',
   initGuard: 'none',
   stepScoped: false,

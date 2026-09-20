@@ -1,7 +1,7 @@
 import { StepData } from '../parser/types';
 
 /**
- * Чистый слой (без `vscode`) для `NEXT STEP` (§15 `EXECUTION_PROTOCOL.md`).
+ * Чистый слой (без `vscode`) для `STEP NEXT` (§15 `EXECUTION_PROTOCOL.md`).
  */
 
 export interface NextStepResult {
