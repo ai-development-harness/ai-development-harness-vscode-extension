@@ -19,6 +19,22 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "harness-step",
+        "aliases": ["Harness STEP"],
+        "filenames": [],
+        "filenamePatterns": ["**/planning/tasks/STEP-*.md"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "harness-step",
+        "scopeName": "text.harness-step.markdown",
+        "path": "./syntaxes/harness-step.tmLanguage.json"
+      }
+    ],
     "commands": [
       {
         "command": "harness.changeLanguage",
@@ -257,6 +273,7 @@
     "lint": "eslint src",
     "test": "jest",
     "test:integration": "vscode-test",
+    "test:integration:pre-activation": "vscode-test --config .vscode-test.pre-activation.mjs",
     "vscode:prepublish": "npm run build",
     "package": "vsce package"
   },

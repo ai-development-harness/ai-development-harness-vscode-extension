@@ -1,0 +1,10 @@
+{
+  "scopeName": "text.harness-step.markdown",
+  "patterns": [
+    { "match": "^#{1,6} .*$", "name": "markup.heading.markdown" },
+    { "match": "\\*\\*(Статус|Type|Приоритет|Фаза|Depends on):\\*\\*", "name": "keyword.control.harness-step" },
+    { "match": "\\b(?:STEP|REQ|ADR)-\\d+\\b", "name": "constant.other.reference.harness-step" },
+    { "match": "^- \\[[ xX]\\] ", "name": "markup.list.checked.markdown" },
+    { "include": "text.html.markdown" }
+  ]
+}

@@ -72,5 +72,20 @@
   "harness.explorer.view.filtersActive": "фильтры: {count}",
   "harness.explorer.viewsWelcome": "Проект не выглядит инициализированным Harness-проектом.",
   "harness.explorer.viewsWelcome.button": "Инициализировать проект",
-  "harness.explorer.prefill.followUp": "Follow-up к {step}: "
+  "harness.explorer.prefill.followUp": "Follow-up к {step}: ",
+  "harness.editor.diagnostic.unparseable": "Не удалось разобрать STEP-файл.",
+  "harness.editor.diagnostic.parseWarning": "Поле {field}: {reason}",
+  "harness.editor.diagnostic.emptyField": "Обязательное поле {field} пусто.",
+  "harness.editor.diagnostic.emptySection": "Обязательная секция {section} пуста.",
+  "harness.editor.diagnostic.missingReference": "Не найдена ссылка {kind} {id}.",
+  "harness.editor.diagnostic.unsatisfiedDependency": "Зависимость {id} не выполнена.",
+  "harness.editor.diagnostic.dependencyCycle": "Обнаружен цикл зависимостей STEP.",
+  "harness.editor.diagnostic.scopeConflict": "Пункт Scope расширяет Out of scope.",
+  "harness.editor.hover.unavailable": "Целевой артефакт недоступен.",
+  "harness.editor.action.markAcceptance": "Отметить acceptance criterion выполненным",
+  "harness.editor.action.requestReview": "Запросить review",
+  "harness.editor.action.flagBlocker": "Отметить blocker",
+  "harness.editor.action.createFollowUp": "Создать follow-up STEP",
+  "harness.editor.codelens.openReference": "Открыть {id}",
+  "harness.editor.codelens.openPlan": "Открыть PLAN"
 }

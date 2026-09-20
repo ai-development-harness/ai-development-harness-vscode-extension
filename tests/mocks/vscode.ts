@@ -70,12 +70,48 @@ export class RelativePattern {
 }
 
 export class Range {
-  constructor(
-    public startLine: number,
-    public startCharacter: number,
-    public endLine: number,
-    public endCharacter: number
-  ) {}
+  start: Position;
+  end: Position;
+  startLine: number;
+  startCharacter: number;
+  endLine: number;
+  endCharacter: number;
+  constructor(start: Position | number, startCharacter: Position | number, endLine?: number, endCharacter?: number) {
+    this.start = start instanceof Position ? start : new Position(start, startCharacter as number);
+    this.end = startCharacter instanceof Position ? startCharacter : new Position(endLine ?? 0, endCharacter ?? 0);
+    this.startLine = this.start.line;
+    this.startCharacter = this.start.character;
+    this.endLine = this.end.line;
+    this.endCharacter = this.end.character;
+  }
+}
+
+export class Position {
+  constructor(public line: number, public character: number) {}
+}
+
+export class CodeAction {
+  edit?: WorkspaceEdit;
+  command?: unknown;
+  constructor(public title: string, public kind: unknown) {}
+}
+
+export const CodeActionKind = { QuickFix: 'quickfix' };
+
+export class CodeLens {
+  constructor(public range: Range, public command?: unknown) {}
+}
+
+export class CompletionItem {
+  detail?: string;
+  documentation?: unknown;
+  constructor(public label: string, public kind: unknown) {}
+}
+
+export const CompletionItemKind = { Reference: 'reference' };
+
+export class MarkdownString {
+  constructor(public value: string) {}
 }
 
 export class WorkspaceEdit {
@@ -109,6 +145,9 @@ export const workspace = {
   workspaceFolders: undefined as unknown,
   textDocuments: [] as unknown[],
   applyEdit: jest.fn(async () => true),
+  onDidOpenTextDocument: jest.fn(),
+  onDidChangeTextDocument: jest.fn(),
+  onDidCloseTextDocument: jest.fn(),
 };
 
 export const window = {
@@ -125,4 +164,8 @@ export const window = {
 export const commands = {
   executeCommand: jest.fn(),
   registerCommand: jest.fn(() => ({ dispose: () => {} })),
+};
+
+export const languages = {
+  setTextDocumentLanguage: jest.fn(),
 };
