@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { activateI18n } from './locales/activation';
 import { registerHarnessCommands } from './commands/activation';
 import { HarnessExplorerHandle, registerHarnessExplorer } from './explorer/activation';
+import { registerStepEditor } from './editor/activation';
 
 /**
  * FIX STEP-006 (2-й проход): `explorerProvider` в `exports` — тестовая
@@ -18,6 +19,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Harnes
   await activateI18n(context);
   registerHarnessCommands(context);
   const explorer = await registerHarnessExplorer(context);
+  await registerStepEditor(context);
   return { explorerProvider: explorer?.provider };
 }
 

@@ -4,7 +4,7 @@
 
 ## Summary
 
-Проект инициализирован (`INIT PROJECT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette с 11 MVP-командами + pre-dispatch валидацией (`STEP-005`), Sidebar Explorer (`STEP-006`), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 выполнены. Editor/status bar остаются в будущих STEP.
+Проект инициализирован (`INIT PROJECT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette с 11 MVP-командами + pre-dispatch валидацией (`STEP-005`), Sidebar Explorer (`STEP-006`), STEP File Editor (`STEP-007`), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 выполнены. Status Bar остаётся в будущем STEP-008.
 
 ## In progress
 
@@ -17,9 +17,16 @@
 ## Next unblocked work
 
 - `STEP-008` (Status Bar) — зависел от STEP-003, STEP-005, оба `Выполнено` — полностью разблокирован, доступен для `PLAN`.
-- `STEP-007` — dependency STEP-016 выполнена; доступен для `PLAN` и обязан использовать resolver ADR-005.
 
 ## Recent completed
+
+- `STEP-007` — STEP File Editor: custom language, advisory diagnostics,
+  CodeLens/Definition/Hover, autocomplete и guarded quick actions. Единый
+  manifest-resolved index следует за внешними create/change/delete; generation
+  guard не допускает возврата устаревшего index при перекрывающихся refresh.
+  Independent review — PASS
+  (`planning/reviews/STEP-007/REVIEW-2026-09-20T0708Z.md`); проверки: compile,
+  lint, build, 309 unit tests, 27 Extension Host tests и Harness validation.
 
 - `STEP-009` — manual-only handoff для agent-requiring команд: CTS и Mutation
   policy pre-validation выполняются до handoff, text-command получает

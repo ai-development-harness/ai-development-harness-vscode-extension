@@ -72,5 +72,20 @@
   "harness.explorer.view.filtersActive": "filters: {count}",
   "harness.explorer.viewsWelcome": "This does not look like an initialized Harness project.",
   "harness.explorer.viewsWelcome.button": "Init project",
-  "harness.explorer.prefill.followUp": "Follow-up to {step}: "
+  "harness.explorer.prefill.followUp": "Follow-up to {step}: ",
+  "harness.editor.diagnostic.unparseable": "Unable to parse the STEP file.",
+  "harness.editor.diagnostic.parseWarning": "Field {field}: {reason}",
+  "harness.editor.diagnostic.emptyField": "Required field {field} is empty.",
+  "harness.editor.diagnostic.emptySection": "Required section {section} is empty.",
+  "harness.editor.diagnostic.missingReference": "Reference {kind} {id} was not found.",
+  "harness.editor.diagnostic.unsatisfiedDependency": "Dependency {id} is not complete.",
+  "harness.editor.diagnostic.dependencyCycle": "A STEP dependency cycle was found.",
+  "harness.editor.diagnostic.scopeConflict": "A Scope item expands Out of scope.",
+  "harness.editor.hover.unavailable": "Target artifact is unavailable.",
+  "harness.editor.action.markAcceptance": "Mark acceptance criterion done",
+  "harness.editor.action.requestReview": "Request review",
+  "harness.editor.action.flagBlocker": "Flag blocker",
+  "harness.editor.action.createFollowUp": "Create follow-up STEP",
+  "harness.editor.codelens.openReference": "Open {id}",
+  "harness.editor.codelens.openPlan": "Open PLAN"
 }

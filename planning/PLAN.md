@@ -10,7 +10,7 @@
 | STEP-004 | i18n service (RU default + EN) | IMPLEMENTATION | Средний | Выполнено | STEP-002 | REQ-006 |
 | STEP-005 | Command Palette: 11 MVP-команд + pre-dispatch валидация | IMPLEMENTATION | Критический | Выполнено | STEP-001, STEP-003, STEP-004 | REQ-001 |
 | STEP-006 | Sidebar Explorer | IMPLEMENTATION | Высокий | Выполнено | STEP-003 | REQ-002 |
-| STEP-007 | STEP File Editor (диагностика, code lens, hover, autocomplete) | IMPLEMENTATION | Высокий | Запланировано | STEP-003, STEP-016 | REQ-003 |
+| STEP-007 | STEP File Editor (диагностика, code lens, hover, autocomplete) | IMPLEMENTATION | Высокий | Выполнено | STEP-003, STEP-016 | REQ-003 |
 | STEP-008 | Status Bar | IMPLEMENTATION | Средний | Запланировано | STEP-003, STEP-005 | REQ-004 |
 | STEP-009 | Manual handoff к agent CLI в MVP | IMPLEMENTATION | Критический | Выполнено | STEP-001, STEP-005 | REQ-005 |
 | STEP-010 | Полная локализация реализованного UI | IMPLEMENTATION | Средний | Запланировано | STEP-004, STEP-005, STEP-006, STEP-007, STEP-008, STEP-009 | REQ-006 |
@@ -31,6 +31,5 @@ REQ-007 (Dependency graph), REQ-008 (Health Dashboard), REQ-009 (Mutation Policy
 
 ## Незаблокированная работа прямо сейчас
 
-STEP-001..STEP-006 и STEP-014..STEP-020 `Выполнено`. `STEP-007` и `STEP-008`
-полностью разблокированы для `PLAN`. Следующая работа по приоритету — `STEP
-PLAN STEP-007`; он обязан использовать resolver ADR-005.
+STEP-001..STEP-007, STEP-009 и STEP-014..STEP-020 `Выполнено`. `STEP-008`
+полностью разблокирован для `PLAN` и является следующей работой по roadmap.
