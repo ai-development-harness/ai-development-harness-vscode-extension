@@ -91,7 +91,7 @@ Risk flags управляют orchestration, но не заменяют анал
 
 ## 6. `INIT PROJECT`
 
-Precondition: `.project/manifest.yaml → project.initialized: false`.
+Precondition: `.harness/manifest.yaml → project.initialized: false`.
 
 Алгоритм:
 
@@ -351,7 +351,7 @@ Release gate определяется фактическим проектом. �
 
 Read-only Git preflight:
 
-1. Прочитать `.project/git-policy.toml`.
+1. Прочитать `.harness/git-policy.toml`.
 2. Показать current branch, protected status, upstream, ahead/behind/diverged.
 3. Показать staged/unstaged/untracked и логические группы изменений.
 4. Запустить `python3 tools/harness/validate.py --mode commit`.

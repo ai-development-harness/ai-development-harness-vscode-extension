@@ -1,4 +1,4 @@
-import { resolveHarnessArtifactPath } from '../../../src/parser/artifactPaths';
+import { resolveHarnessArtifactPath, HARNESS_MANIFEST_REL_PATH } from '../../../src/parser/artifactPaths';
 import { ManifestData } from '../../../src/parser/types';
 
 const manifest: ManifestData = {
@@ -18,11 +18,17 @@ const manifest: ManifestData = {
     harnessUpdateDirectory: 'planning/harness-updates',
   },
   repository: {
-    gitPolicy: '.project/git-policy.toml', harnessPolicy: '.project/harness-update.toml',
-    harnessUpdatePolicy: '.project/harness-update.toml', harnessLock: '.project/harness.lock.json',
+    gitPolicy: '.harness/git-policy.toml', harnessPolicy: '.harness/harness-update.toml',
+    harnessUpdatePolicy: '.harness/harness-update.toml', harnessLock: '.harness/harness.lock.json',
     harnessValidation: 'tools/harness/validate.py', harnessCI: '.github/workflows/harness-integrity.yml',
   },
 };
+
+describe('HARNESS_MANIFEST_REL_PATH', () => {
+  it('пинит литерал текущего control-plane bootstrap path (FIX STEP-024 F-001, не сравнение константы с собой)', () => {
+    expect(HARNESS_MANIFEST_REL_PATH).toBe('.harness/manifest.yaml');
+  });
+});
 
 describe('resolveHarnessArtifactPath', () => {
   it('резолвит оба allowlisted артефакта поколения 1 от их manifest anchors', () => {

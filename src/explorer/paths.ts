@@ -1,9 +1,10 @@
 import { resolveHarnessArtifactPath } from '../parser/artifactPaths';
 import { ManifestData } from '../parser/types';
+import { HARNESS_MANIFEST_REL_PATH } from '../parser/artifactPaths';
 
 /**
  * REQ-002/ADR-001: единственное место, где путь превращается в источник узлов
- * дерева. Все пути — из `ManifestData`; `.project/manifest.yaml` — единственный
+ * дерева. Все пути — из `ManifestData`; `.harness/manifest.yaml` — единственный
  * фиксированный self-path (тот же приём, что и `src/commands/activation.ts`).
  */
 
@@ -43,7 +44,7 @@ export interface ArtifactSource {
 }
 
 /** Фиксированный self-path манифеста — не объявлен внутри самого себя (ADR-001). */
-export const MANIFEST_REL_PATH = '.project/manifest.yaml';
+export const MANIFEST_REL_PATH = HARNESS_MANIFEST_REL_PATH;
 
 export function resolveArtifactSources(manifest: ManifestData): ArtifactSource[] {
   const requirementsStatus = resolveHarnessArtifactPath(manifest, 'requirementsStatus');

@@ -1,4 +1,6 @@
-import commandTransitions from '../../.project/command-transitions.json';
+// Esbuild встраивает current CTS в bundle extension. Runtime не читает
+// workspace control-plane и не зависит от удалённого `.project/**` layout.
+import commandTransitions from '../../.harness/command-transitions.json';
 import type { StepData } from '../parser/types';
 
 type InputKind = 'none' | 'optional' | 'required';

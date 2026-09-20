@@ -39,4 +39,4 @@ coverage/
 # Генерируется integration-тестами STEP-004 внутри fixture-workspace;
 # STEP-005 добавляет в тот же fixture-workspace committed manifest.yaml,
 # поэтому игнорируется только runtime-генерируемый файл, не вся директория.
-tests/fixtures/workspace/.project/harness-config.json
+tests/fixtures/workspace/.harness/harness-config.json

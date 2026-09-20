@@ -20,7 +20,8 @@ export function getI18nService(): I18nService {
 
 function resolveConfigPath(): string | undefined {
   const folder = vscode.workspace.workspaceFolders?.[0];
-  return folder ? path.join(folder.uri.fsPath, '.project', 'harness-config.json') : undefined;
+  // Settings находятся рядом с current control-plane, но не влияют на его topology.
+  return folder ? path.join(folder.uri.fsPath, '.harness', 'harness-config.json') : undefined;
 }
 
 export async function activateI18n(context: vscode.ExtensionContext): Promise<I18nService> {

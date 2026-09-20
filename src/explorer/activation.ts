@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { getI18nService } from '../locales/activation';
+import { HARNESS_MANIFEST_REL_PATH } from '../parser/artifactPaths';
 import { parseManifest } from '../parser/yamlParser';
 import type { ManifestData, ManifestError } from '../parser/types';
 import * as actions from './actions';
@@ -70,7 +71,7 @@ export async function registerHarnessExplorer(
   }
   const workspaceRoot = folder.uri.fsPath;
 
-  const manifestResult = await parseManifest(path.join(workspaceRoot, '.project', 'manifest.yaml'));
+  const manifestResult = await parseManifest(path.join(workspaceRoot, HARNESS_MANIFEST_REL_PATH));
   void vscode.commands.executeCommand('setContext', 'harness.isHarnessProject', manifestResult.ok);
   if (!manifestResult.ok) {
     void vscode.window.showWarningMessage(
@@ -100,7 +101,7 @@ export async function registerHarnessExplorer(
       manifest,
       (groupId) => provider.invalidate(groupId),
       async () => {
-        const reparsed = await parseManifest(path.join(workspaceRoot, '.project', 'manifest.yaml'));
+        const reparsed = await parseManifest(path.join(workspaceRoot, HARNESS_MANIFEST_REL_PATH));
         if (reparsed.ok) {
           manifest = reparsed.value;
           // FIX STEP-006 (F-013): `setManifest` пересчитывает `sources`

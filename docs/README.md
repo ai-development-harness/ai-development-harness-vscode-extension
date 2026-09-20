@@ -1,6 +1,6 @@
 # Документация проекта
 
-После `INIT PROJECT` этот каталог становится project knowledge base.
+После `PROJECT INIT` этот каталог становится project knowledge base.
 
 ## Продуктовые документы
 
@@ -16,12 +16,12 @@
 
 ## Документация Harness
 
-`harness/` описывает правила самого AI Development Harness и не должна смешиваться с product docs.
+`.harness/docs/` описывает правила самого AI Development Harness и не должна смешиваться с product docs.
 
 Начни с:
 
-- `harness/README.md` — оглавление;
-- `harness/DOCUMENT_MODEL.md` — связи REQ/ADR/STEP/PLAN/STATUS/Evidence/Review;
-- `harness/GLOSSARY.md` — определения терминов Harness.
+- `.harness/docs/README.md` — оглавление;
+- `.harness/docs/DOCUMENT_MODEL.md` — связи REQ/ADR/STEP/PLAN/STATUS/Evidence/Review;
+- `.harness/docs/GLOSSARY.md` — определения терминов Harness.
 
 Product-specific subsystem docs добавляются по мере появления устойчивых подсистем. Не создавай десятки пустых файлов во время INIT без необходимости.

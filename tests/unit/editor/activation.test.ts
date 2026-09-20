@@ -23,7 +23,7 @@ const editorManifest: ManifestData = {
   language: { default: 'ru', agentResponses: 'ru', documentation: 'ru', commitMessages: 'ru', codeComments: 'ru', testNames: 'ru', fixtures: 'ru', githubTemplates: 'ru', releaseNotes: 'ru' },
   sources: { localBrief: 'PROJECT_BRIEF.local.md', projectOverview: 'docs/PROJECT.md', requirements: 'docs/requirements/SPEC.md', architecture: 'docs/architecture.md', roadmap: 'planning/PLAN.md', status: 'planning/STATUS.md' },
   protocol: { file: 'planning/EXECUTION_PROTOCOL.md', taskDirectory: 'custom/steps', reviewDirectory: 'planning/reviews', auditDirectory: 'planning/audits', skillSearchDirectory: 'planning/skill-searches', skillRegistry: 'docs/skills/REGISTRY.md', harnessUpdateDirectory: 'planning/harness-updates' },
-  repository: { gitPolicy: '.project/git-policy.toml', harnessPolicy: '.project/harness-policy.toml', harnessUpdatePolicy: '.project/harness-update.toml', harnessLock: '.project/harness.lock.json', harnessValidation: 'tools/harness/validate.py', harnessCI: '.github/workflows/harness-integrity.yml' },
+  repository: { gitPolicy: '.harness/git-policy.toml', harnessPolicy: '.harness/harness-policy.toml', harnessUpdatePolicy: '.harness/harness-update.toml', harnessLock: '.harness/harness.lock.json', harnessValidation: 'tools/harness/validate.py', harnessCI: '.github/workflows/harness-integrity.yml' },
 };
 
 const minimalStep = `# STEP-101 — Тест
@@ -410,6 +410,12 @@ describe('editor language compatibility', () => {
       expect(stepEditorWatchPatterns(editorManifest)).not.toContain('planning/tasks/STEP-*.md');
     } finally {
       await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('не наблюдает ни одного пути с префиксом legacy `.project/` (FIX STEP-024 F-001)', () => {
+    for (const pattern of stepEditorWatchPatterns(editorManifest)) {
+      expect(pattern.startsWith('.project/')).toBe(false);
     }
   });
 

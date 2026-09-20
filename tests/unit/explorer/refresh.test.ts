@@ -48,4 +48,12 @@ describe('watchedPaths', () => {
       { groupId: 'architecture', relGlob: unsupported.sources.architecture },
     ]);
   });
+
+  it('не содержит ни одного watched пути с префиксом legacy `.project/` (FIX STEP-024 F-001)', async () => {
+    const manifest = await loadManifest();
+
+    for (const { relGlob } of watchedPaths(manifest)) {
+      expect(relGlob.startsWith('.project/')).toBe(false);
+    }
+  });
 });

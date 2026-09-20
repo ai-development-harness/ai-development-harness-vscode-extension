@@ -1,5 +1,7 @@
 import * as path from 'node:path';
+import * as os from 'node:os';
 import { parseManifest } from '../../../src/parser/yamlParser';
+import { HARNESS_MANIFEST_REL_PATH } from '../../../src/parser/artifactPaths';
 
 const FIXTURES = path.join(__dirname, '..', '..', 'fixtures', 'manifest');
 
@@ -17,7 +19,7 @@ describe('parseManifest', () => {
     expect(result.value.protocol.taskDirectory).toBe('planning/tasks');
     expect(result.value.sources.requirements).toBe('docs/requirements/SPEC.md');
     expect(result.value.sources.roadmap).toBe('planning/PLAN.md');
-    expect(result.value.repository.gitPolicy).toBe('.project/git-policy.toml');
+    expect(result.value.repository.gitPolicy).toBe('.harness/git-policy.toml');
     expect(result.value.repository.harnessValidation).toBe('tools/harness/validate.py');
   });
 
@@ -39,6 +41,25 @@ describe('parseManifest', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('not-found');
+  });
+
+  it('не читает legacy `.project/manifest.yaml` как fallback, когда `.harness/manifest.yaml` отсутствует (FIX STEP-024 F-001)', async () => {
+    const fs = await import('node:fs/promises');
+    const legacyOnlyRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-navigator-legacy-only-'));
+    try {
+      const legacyManifestPath = path.join(legacyOnlyRoot, '.project', 'manifest.yaml');
+      await fs.mkdir(path.dirname(legacyManifestPath), { recursive: true });
+      // Валидный по schema манифест — чтобы отличить "не нашёл файл" от "нашёл, но не смог распарсить".
+      await fs.copyFile(path.join(FIXTURES, 'initialized.manifest.yaml'), legacyManifestPath);
+
+      const result = await parseManifest(path.join(legacyOnlyRoot, HARNESS_MANIFEST_REL_PATH));
+
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe('not-found');
+    } finally {
+      await fs.rm(legacyOnlyRoot, { recursive: true, force: true });
+    }
   });
 
   it('даёт явную ошибку InvalidYaml на битый YAML, не exception', async () => {
@@ -108,10 +129,10 @@ describe('parseManifest', () => {
       '  skillRegistry: docs/skills/REGISTRY.md',
       '  harnessUpdateDirectory: planning/harness-updates',
       'repository:',
-      '  gitPolicy: .project/git-policy.toml',
-      '  harnessPolicy: .project/harness-policy.toml',
-      '  harnessUpdatePolicy: .project/harness-update.toml',
-      '  harnessLock: .project/harness.lock.json',
+      '  gitPolicy: .harness/git-policy.toml',
+      '  harnessPolicy: .harness/harness-policy.toml',
+      '  harnessUpdatePolicy: .harness/harness-update.toml',
+      '  harnessLock: .harness/harness.lock.json',
       '  harnessValidation: tools/harness/validate.py',
       '  harnessCI: .github/workflows/harness-integrity.yml',
       '',

@@ -9,7 +9,7 @@ import { EMPTY_FILTER_STATE } from '../../../src/explorer/filter';
 const PROJECT_ROOT = path.join(__dirname, '../../fixtures/projects/explorer');
 
 async function loadManifest(): Promise<ManifestData> {
-  const parsed = await parseManifest(path.join(PROJECT_ROOT, '.project/manifest.yaml'));
+  const parsed = await parseManifest(path.join(PROJECT_ROOT, '.harness/manifest.yaml'));
   if (!parsed.ok) throw new Error('fixture manifest failed to parse');
   return parsed.value;
 }

@@ -2,6 +2,13 @@ import * as posix from 'node:path/posix';
 import { ManifestData } from './types';
 
 /**
+ * Bootstrap manifest принадлежит текущему поколению Harness, а не consumer.
+ * Все runtime consumers импортируют эту константу, поэтому legacy `.project`
+ * layout не может вернуться как локальный fallback в одном из них.
+ */
+export const HARNESS_MANIFEST_REL_PATH = '.harness/manifest.yaml';
+
+/**
  * Идентификаторы Harness-артефактов, которых нет в текущей schema manifest.
  * @see docs/adr/ADR-005-artifact-path-resolution.md
  */

@@ -5,7 +5,7 @@ VSCode extension, превращающая редактор в IDE-слой на
 
 Проект инициализирован, product code ещё не написан. Roadmap — 13 STEP (`STEP-001`..`STEP-013`), MVP покрывает 11 из 24 канонических команд протокола (см. `ADR-003`). Ближайший открытый вопрос — механизм вызова агента для выполнения команд (`STEP-001`, `docs/OPEN_QUESTIONS.md` OQ-001).
 
-Следующая рекомендуемая команда: `PLAN STEP-001` (или `PLAN STEP-002` параллельно — обе не имеют зависимостей).
+Следующая рекомендуемая команда: `STEP PLAN STEP-001` (или `STEP PLAN STEP-002` параллельно — обе не имеют зависимостей).
 
 Подробнее: [`docs/PROJECT.md`](docs/PROJECT.md) · [требования](docs/requirements/SPEC.md) · [архитектура](docs/architecture.md) · [roadmap](planning/PLAN.md)
 <!-- PROJECT:END -->

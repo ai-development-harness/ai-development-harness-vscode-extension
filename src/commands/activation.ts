@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { getI18nService } from '../locales/activation';
+import { HARNESS_MANIFEST_REL_PATH } from '../parser/artifactPaths';
 import { parseManifest } from '../parser/yamlParser';
 import type { ManifestError } from '../parser/types';
 import { DispatchContext, HarnessCommand } from './baseCommand';
@@ -78,7 +79,7 @@ async function handleCommand(command: HarnessCommand, explicitArg?: string): Pro
     return;
   }
   const workspaceRoot = folder.uri.fsPath;
-  const manifestResult = await parseManifest(path.join(workspaceRoot, '.project', 'manifest.yaml'));
+  const manifestResult = await parseManifest(path.join(workspaceRoot, HARNESS_MANIFEST_REL_PATH));
   if (!manifestResult.ok) {
     void vscode.window.showErrorMessage(
       i18n.t(manifestErrorKey(manifestResult.error.kind), manifestErrorParams(manifestResult.error))

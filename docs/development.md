@@ -26,8 +26,8 @@ npm install
 
 ## Testing
 
-- Unit-тесты: Jest, конфигурация `jest.config.mjs`, файлы `tests/unit/**/*.test.ts`. С STEP-003 покрывают Parser layer (`src/parser/**`) на fixtures — реальных `.project/manifest.yaml`/`TEMPLATE.md`/`SPEC.md`/`EXECUTION_PROTOCOL.md`, скопированных в `tests/fixtures/**`. С STEP-004 добавлен `tests/unit/locales/i18n.test.ts` (i18n service, загрузка реальных `src/locales/{ru,en}.json`).
-- Integration-тесты: Mocha через `@vscode/test-cli`, конфигурация `.vscode-test.mjs`, файлы `tests/integration/**/*.test.js` (JS, не TS — `@vscode/test-cli` не транспилирует TypeScript, поэтому integration-тесты пишутся напрямую в JS, чтобы не вводить отдельный build-шаг только для тестов). Smoke-тест на STEP-002 (активация extension без исключений) плюс с STEP-004 — `i18n.test.js` (регистрация `harness.changeLanguage`, персист выбранного языка). С STEP-004 `.vscode-test.mjs` открывает фиксированный `workspaceFolder: tests/fixtures/workspace` — нужен реальный workspace, чтобы `activateI18n` мог резолвить `.project/harness-config.json`; генерируемый в нём `.project/` игнорируется git.
+- Unit-тесты: Jest, конфигурация `jest.config.mjs`, файлы `tests/unit/**/*.test.ts`. С STEP-003 покрывают Parser layer (`src/parser/**`) на fixtures — реальных `.harness/manifest.yaml`/`TEMPLATE.md`/`SPEC.md`/`EXECUTION_PROTOCOL.md`, скопированных в `tests/fixtures/**`. С STEP-004 добавлен `tests/unit/locales/i18n.test.ts` (i18n service, загрузка реальных `src/locales/{ru,en}.json`).
+- Integration-тесты: Mocha через `@vscode/test-cli`, конфигурация `.vscode-test.mjs`, файлы `tests/integration/**/*.test.js` (JS, не TS — `@vscode/test-cli` не транспилирует TypeScript, поэтому integration-тесты пишутся напрямую в JS, чтобы не вводить отдельный build-шаг только для тестов). Smoke-тест на STEP-002 (активация extension без исключений) плюс с STEP-004 — `i18n.test.js` (регистрация `harness.changeLanguage`, персист выбранного языка). С STEP-004 `.vscode-test.mjs` открывает фиксированный `workspaceFolder: tests/fixtures/workspace` — нужен реальный workspace, чтобы `activateI18n` мог резолвить `.harness/harness-config.json`; генерируемый в нём runtime-файл конфигурации игнорируется git.
 
 ## Lint / formatting / type checking
 
@@ -57,4 +57,4 @@ npm install
 
 ## Git и CI
 
-Repository Git workflow задаётся `docs/harness/GIT_WORKFLOW.md` и `.project/git-policy.toml`. Harness Integrity CI является baseline; project-specific CI добавляется после определения фактического stack/tooling.
+Repository Git workflow задаётся `.harness/docs/GIT_WORKFLOW.md` и `.harness/git-policy.toml`. Harness Integrity CI является baseline; project-specific CI добавляется после определения фактического stack/tooling.

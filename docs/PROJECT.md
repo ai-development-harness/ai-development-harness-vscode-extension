@@ -1,6 +1,6 @@
 # Project
 
-> Этот файл заполняется `INIT PROJECT` на основании `PROJECT_BRIEF.local.md`.
+> Этот файл заполняется `PROJECT INIT` на основании `PROJECT_BRIEF.local.md`.
 
 ## Название
 
@@ -22,7 +22,7 @@ VSCode extension, превращающая текстовый редактор �
 
 ## Ключевые сценарии
 
-1. Command Palette: 11 MVP-команд (`INIT PROJECT`, `ADD STEP`, `PLAN STEP-NNN`, `IMPLEMENT STEP-NNN`, `REVIEW STEP-NNN`, `FIX STEP-NNN`, `RUN STEP-NNN`, `NEXT STEP`, `STATUS PROJECT`, `QUICK FIX`, `RECONCILE PROJECT`) с pre-flight валидацией перед dispatch.
+1. Command Palette: 11 MVP-команд (`PROJECT INIT`, `STEP ADD:`, `STEP PLAN STEP-NNN`, `STEP IMPLEMENT STEP-NNN`, `STEP REVIEW STEP-NNN`, `STEP FIX STEP-NNN`, `STEP RUN STEP-NNN`, `STEP NEXT`, `PROJECT STATUS`, `PROJECT QUICK FIX:`, `PROJECT RECONCILE`) с pre-flight валидацией перед dispatch.
 2. Sidebar Explorer — дерево артефактов проекта с фильтрами и статус-иконками.
 3. STEP File Editor — валидация, code lens, hover, autocomplete, quick actions на реальном формате STEP-файлов (labeled markdown, без frontmatter).
 4. Status Bar — состояние инициализации, прогресс, next command, health-warnings.
@@ -36,12 +36,12 @@ Phase 2 (после MVP, не в текущем roadmap): dependency graph visua
 ### In scope
 
 - 11 MVP-команд из `docs/requirements/SPEC.md` (REQ-001..REQ-006) поверх проектов, следующих структуре `ai-development-harness-template`.
-- Чтение путей протокола из `.project/manifest.yaml` (не хардкод директорий).
+- Чтение путей протокола из `.harness/manifest.yaml` (не хардкод директорий).
 - RU (default) + EN локализация с graceful fallback.
 
 ### Out of scope (MVP)
 
-- Остальные 13 команд полного протокола (`FIND/INSTALL/CREATE SKILL`, `GENERATE GITHUB TEMPLATES`, `AUDIT STEP-NNN`, `RELEASE CHECK`, `CHECK/UPDATE HARNESS`, `GIT CHECK`, `COMMIT`, `PUSH`, `PR`, `SYNC`) — см. `ADR-003`.
+- Остальные 13 команд полного протокола (`SKILL FIND`/`SKILL INSTALL`/`SKILL CREATE`, `GITHUB GENERATE TEMPLATES`, `STEP AUDIT STEP-NNN`, `RELEASE CHECK`, `HARNESS UPDATE CHECK`/`HARNESS UPDATE APPLY`, `GIT CHECK`, `GIT COMMIT`, `GIT PUSH`, `GIT PR`, `GIT SYNC`) — см. `ADR-003`.
 - Dependency graph visualization, Health dashboard, Mutation policy enforcement warnings, Keyboard shortcuts — Phase 2, деферред REQ.
 - Team-функции (assign reviewer, permissions), cloud sync, телеметрия.
 - Модификация `EXECUTION_PROTOCOL.md` из плагина.
@@ -65,7 +65,7 @@ Phase 2 (после MVP, не в текущем roadmap): dependency graph visua
 
 ## Референсы и внешние источники
 
-- `ai-development-harness-template` (соседний репозиторий в этом monorepo) — источник структуры проекта, `planning/EXECUTION_PROTOCOL.md`, `docs/harness/COMMANDS.md` (полный список из 24 команд), skill-файлов.
+- `ai-development-harness-template` (соседний репозиторий в этом monorepo) — источник структуры проекта, `.harness/docs/EXECUTION_PROTOCOL.md`, `.harness/docs/COMMANDS.md` (полный список из 24 команд), skill-файлов.
 - `https://ai-development-harness.ru/` — обзор системы, getting started guide.
 - Исходный артефакт-ТЗ (`harness-navigator-tz.md`) и его ревизия против реального шаблона — `TZ_REVIEW_AND_PLAN.md` в этом репозитории.
 

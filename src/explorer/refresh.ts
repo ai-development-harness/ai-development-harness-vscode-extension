@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { resolveHarnessArtifactPath } from '../parser/artifactPaths';
+import { HARNESS_MANIFEST_REL_PATH } from '../parser/artifactPaths';
 import { ManifestData } from '../parser/types';
 import { GroupId } from './paths';
 
@@ -31,7 +32,7 @@ export function watchedPaths(manifest: ManifestData): WatchedPath[] {
   const requirementsStatus = resolveHarnessArtifactPath(manifest, 'requirementsStatus');
   const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
   return [
-    { groupId: 'manifest', relGlob: '.project/manifest.yaml' },
+    { groupId: 'manifest', relGlob: HARNESS_MANIFEST_REL_PATH },
     { groupId: 'requirements', relGlob: manifest.sources.requirements },
     ...(requirementsStatus ? [{ groupId: 'requirements' as const, relGlob: requirementsStatus }] : []),
     { groupId: 'architecture', relGlob: manifest.sources.architecture },
@@ -47,7 +48,7 @@ export function watchedPaths(manifest: ManifestData): WatchedPath[] {
 
 /**
  * По одному `createFileSystemWatcher` на каждый объявленный в манифесте путь
- * плюс сам `.project/manifest.yaml`. Изменение манифеста инвалидирует дерево
+ * плюс сам `.harness/manifest.yaml`. Изменение манифеста инвалидирует дерево
  * целиком (пути могли измениться) и вызывает `onManifestChanged`; остальные —
  * только свою группу через `onInvalidate(groupId)`.
  */

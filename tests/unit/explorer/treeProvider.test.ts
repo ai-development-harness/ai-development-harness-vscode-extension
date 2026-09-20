@@ -183,7 +183,7 @@ describe('HarnessTreeDataProvider.setManifest (F-013 regression)', () => {
  */
 describe('HarnessTreeDataProvider caching on real fixture data (F-014 regression)', () => {
   async function loadExplorerFixtureManifest(): Promise<ManifestData> {
-    const parsed = await parseManifest(path.join(EXPLORER_PROJECT_ROOT, '.project/manifest.yaml'));
+    const parsed = await parseManifest(path.join(EXPLORER_PROJECT_ROOT, '.harness/manifest.yaml'));
     if (!parsed.ok) throw new Error('explorer fixture manifest failed to parse');
     return parsed.value;
   }

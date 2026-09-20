@@ -9,7 +9,7 @@
 
 Проект: **AI Development Harness Navigator** — VSCode extension поверх AI Development Harness. Инициализирован `PROJECT INIT` 2026-09-17; product code ещё не написан. Каноническое описание — `docs/PROJECT.md`, требования — `docs/requirements/SPEC.md`, архитектурный baseline — `docs/architecture.md`, roadmap — `planning/PLAN.md`.
 
-Ключевые решения зафиксированы в `ADR-001` (пути только из `.project/manifest.yaml`), `ADR-002` (STEP/REQ/ADR — labeled markdown, не YAML frontmatter), `ADR-003` (MVP = 11 из 24 команд протокола). Открытые вопросы, включая нерешённый механизм вызова агента (блокирует `STEP-005`/`STEP-009`) — `docs/OPEN_QUESTIONS.md`.
+Ключевые решения зафиксированы в `ADR-001` (пути только из манифеста; Superseded by `ADR-005`), `ADR-005` (manifest-first resolver/registry, текущий bootstrap manifest — `.harness/manifest.yaml`), `ADR-002` (STEP/REQ/ADR — labeled markdown, не YAML frontmatter), `ADR-003` (MVP = 11 из 24 команд протокола). Открытые вопросы, включая нерешённый механизм вызова агента (блокирует `STEP-005`/`STEP-009`) — `docs/OPEN_QUESTIONS.md`.
 <!-- PROJECT-CONTEXT:END -->
 
 ## 2. Приоритет источников истины

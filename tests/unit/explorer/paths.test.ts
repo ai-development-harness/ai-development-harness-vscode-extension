@@ -7,10 +7,16 @@ import { GROUP_IDS, MANIFEST_REL_PATH, resolveArtifactSources } from '../../../s
 const FIXTURES = path.join(__dirname, '../../fixtures');
 
 async function loadManifest(): Promise<ManifestData> {
-  const parsed = await parseManifest(path.join(FIXTURES, 'projects/explorer/.project/manifest.yaml'));
+  const parsed = await parseManifest(path.join(FIXTURES, 'projects/explorer/.harness/manifest.yaml'));
   if (!parsed.ok) throw new Error('fixture manifest failed to parse');
   return parsed.value;
 }
+
+describe('MANIFEST_REL_PATH', () => {
+  it('пинит литерал текущего control-plane bootstrap path (FIX STEP-024 F-001, не сравнение константы с собой)', () => {
+    expect(MANIFEST_REL_PATH).toBe('.harness/manifest.yaml');
+  });
+});
 
 describe('resolveArtifactSources', () => {
   it('резолвит ровно 8 групп REQ-002, в порядке протокола', async () => {

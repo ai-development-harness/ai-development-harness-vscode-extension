@@ -21,7 +21,7 @@ export interface ParseWarning {
 }
 
 // ---------------------------------------------------------------------------
-// Manifest (.project/manifest.yaml) — ADR-001
+// Manifest (.harness/manifest.yaml) — ADR-001 / STEP-024
 // ---------------------------------------------------------------------------
 
 export interface HarnessManifestInfo {

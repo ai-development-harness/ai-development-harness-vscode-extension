@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { resolveHarnessArtifactPath } from '../parser/artifactPaths';
+import { HARNESS_MANIFEST_REL_PATH, resolveHarnessArtifactPath } from '../parser/artifactPaths';
 import { getI18nService } from '../locales/activation';
 import { parseManifest } from '../parser/yamlParser';
 import type { ManifestData } from '../parser/types';
@@ -167,7 +167,7 @@ export function registerValidationListeners(
 /** Все filesystem watchers получают STEP glob только из manifest, включая custom layout. */
 export function stepEditorWatchPatterns(manifest: ManifestData): string[] {
   const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
-  return [manifest.sources.requirements, `${manifest.protocol.taskDirectory}/STEP-*.md`, '.project/manifest.yaml', ...(adrDirectory ? [`${adrDirectory}/ADR-*.md`] : [])];
+  return [manifest.sources.requirements, `${manifest.protocol.taskDirectory}/STEP-*.md`, HARNESS_MANIFEST_REL_PATH, ...(adrDirectory ? [`${adrDirectory}/ADR-*.md`] : [])];
 }
 
 /**
@@ -224,7 +224,7 @@ export async function registerStepEditor(context: vscode.ExtensionContext): Prom
   if (!folder) return;
   const root = folder.uri.fsPath;
   const i18n = getI18nService();
-  const initialManifest = await parseManifest(path.join(root, '.project', 'manifest.yaml'));
+  const initialManifest = await parseManifest(path.join(root, HARNESS_MANIFEST_REL_PATH));
   if (!initialManifest.ok) return;
   let manifest = initialManifest.value;
   let index = await loadIndex(root, manifest);
@@ -296,7 +296,7 @@ export async function registerStepEditor(context: vscode.ExtensionContext): Prom
 
 /** Ошибка refresh сохраняет последний корректный index и не создаёт unhandled rejection. */
 async function refreshIndex(root: string): Promise<{ manifest: ManifestData; index: StepEditorIndex } | undefined> {
-  const parsed = await parseManifest(path.join(root, '.project', 'manifest.yaml'));
+  const parsed = await parseManifest(path.join(root, HARNESS_MANIFEST_REL_PATH));
   if (!parsed.ok) return undefined;
   try { return { manifest: parsed.value, index: await loadIndex(root, parsed.value) }; } catch { return undefined; }
 }
