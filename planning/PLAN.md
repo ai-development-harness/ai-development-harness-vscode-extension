@@ -28,6 +28,7 @@
 | STEP-022 | Назначать язык Smart STEP Editor для manifest-resolved taskDirectory | BUGFIX | Высокий | Выполнено | STEP-007, STEP-021 | REQ-003 |
 | STEP-023 | Стабилизировать pre-activation regression Smart STEP Editor в CI | BUGFIX | Высокий | Выполнено | STEP-007, STEP-022 | REQ-003 |
 | STEP-024 | Адаптировать Navigator к control-plane `.harness` | BUGFIX | Критический | Запланировано | STEP-003, STEP-005, STEP-006, STEP-007, STEP-009 | REQ-001, REQ-002, REQ-003, REQ-005, REQ-006 |
+| STEP-025 | Адаптировать REQ-consumers к per-file `docs/requirements/REQ-NNN-*.md` | BUGFIX | Критический | Выполнено | STEP-024 | REQ-001, REQ-002 |
 
 ## Не запланировано (Phase 2, деферред REQ)
 

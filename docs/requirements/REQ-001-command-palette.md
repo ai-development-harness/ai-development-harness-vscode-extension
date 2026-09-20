@@ -20,5 +20,5 @@
 
 ## Traceability
 
-- STEP: STEP-005, STEP-024
+- STEP: STEP-005, STEP-024, STEP-025
 - ADR: ADR-003
