@@ -7,13 +7,13 @@ suite('i18n service (STEP-004)', () => {
   const configPath = () => {
     const folder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(folder, 'ожидался открытый workspace (см. .vscode-test.mjs → workspaceFolder)');
-    return path.join(folder.uri.fsPath, '.project', 'harness-config.json');
+    return path.join(folder.uri.fsPath, '.harness', 'harness-config.json');
   };
 
   suiteTeardown(async () => {
-    // STEP-005: fixture-workspace теперь содержит committed `.project/manifest.yaml`
+    // STEP-005: fixture-workspace теперь содержит committed `.harness/manifest.yaml`
     // в этой же директории — удалять нужно только сам runtime-файл конфигурации,
-    // не всю `.project/` целиком.
+    // не всю `.harness/` целиком.
     await fs.rm(configPath(), { force: true });
   });
 

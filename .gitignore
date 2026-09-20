@@ -4,7 +4,9 @@ PROJECT_BRIEF.local.md
 # Local/private harness overrides.
 AGENTS.local.md
 CLAUDE.local.md
+# Legacy local state из релизов до переноса control plane в .harness/.
 .project/local/
+.harness/local/
 .codex/local/
 .claude/local/
 .claude/settings.local.json
@@ -23,6 +25,7 @@ Thumbs.db
 *.tmp
 *.swp
 __pycache__/
+*.py[cod]
 .venv/
 node_modules/
 dist/
@@ -36,4 +39,7 @@ coverage/
 # Генерируется integration-тестами STEP-004 внутри fixture-workspace;
 # STEP-005 добавляет в тот же fixture-workspace committed manifest.yaml,
 # поэтому игнорируется только runtime-генерируемый файл, не вся директория.
-tests/fixtures/workspace/.project/harness-config.json
+tests/fixtures/workspace/.harness/harness-config.json
+
+# Собранный бинарник для установки
+*.vsix

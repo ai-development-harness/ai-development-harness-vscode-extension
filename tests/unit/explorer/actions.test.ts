@@ -199,8 +199,8 @@ Fixture only.
 async function createEmptyReferenceSources(root: string): Promise<void> {
   await mkdir(path.join(root, 'docs/requirements'), { recursive: true });
   await mkdir(path.join(root, 'docs/adr'), { recursive: true });
-  const fixture = await readFile(path.join(__dirname, '../../fixtures/requirements/SPEC.md'), 'utf8');
-  await writeFile(path.join(root, 'docs/requirements/SPEC.md'), fixture.replaceAll('STEP-009', 'STEP-999'), 'utf8');
+  const fixture = await readFile(path.join(__dirname, '../../fixtures/requirements/REQ-001-fixture-full.md'), 'utf8');
+  await writeFile(path.join(root, 'docs/requirements/REQ-001-fixture-full.md'), fixture.replaceAll('STEP-009', 'STEP-999'), 'utf8');
 }
 
 beforeEach(() => {
@@ -578,13 +578,11 @@ describe('STEP-014 (F-018): guard перепроверяется на свеже
     );
   });
 
-  it('deleteArtifact: нечитаемый REQ source блокирует удаление', async () => {
+  it('deleteArtifact: недоступный REQ-каталог блокирует удаление (per-file layout, STEP-025)', async () => {
     const manifest = await loadManifest(INITIALIZED_MANIFEST);
     const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
-    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
     await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
-    await rm(requirementsPath, { force: true });
-    await mkdir(requirementsPath);
+    await rm(path.join(root, 'docs/requirements'), { recursive: true, force: true });
     vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
 
     await actions.deleteArtifact(root, manifest, i18n, fakeProvider, staleNode('STEP-009') as never);
@@ -683,12 +681,12 @@ describe('STEP-014 (F-018): guard перепроверяется на свеже
   it('deleteArtifact: REQ с ok + warning Traceability блокирует удаление', async () => {
     const manifest = await loadManifest(INITIALIZED_MANIFEST);
     const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
-    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    const requirementsPath = path.join(root, 'docs/requirements/REQ-001-fixture-full.md');
     await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
     const fixture = await readFile(requirementsPath, 'utf8');
     await writeFile(
       requirementsPath,
-      fixture.replace('#### Traceability', '#### Связи'),
+      fixture.replace('## Traceability', '## Связи'),
       'utf8'
     );
     vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);
@@ -705,7 +703,7 @@ describe('STEP-014 (F-018): guard перепроверяется на свеже
   it('deleteArtifact: REQ с нераспознанной STEP-меткой в Traceability блокирует удаление', async () => {
     const manifest = await loadManifest(INITIALIZED_MANIFEST);
     const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
-    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    const requirementsPath = path.join(root, 'docs/requirements/REQ-001-fixture-full.md');
     await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
     const fixture = await readFile(requirementsPath, 'utf8');
     await writeFile(requirementsPath, fixture.replace('- STEP: STEP-005', '- STEPP: STEP-009'), 'utf8');
@@ -722,7 +720,7 @@ describe('STEP-014 (F-018): guard перепроверяется на свеже
   it('deleteArtifact: REQ с повреждённым значением STEP в Traceability блокирует удаление', async () => {
     const manifest = await loadManifest(INITIALIZED_MANIFEST);
     const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
-    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    const requirementsPath = path.join(root, 'docs/requirements/REQ-001-fixture-full.md');
     await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
     const fixture = await readFile(requirementsPath, 'utf8');
     await writeFile(requirementsPath, fixture.replace('- STEP: STEP-005', '- STEP: STEPP-009'), 'utf8');
@@ -739,7 +737,7 @@ describe('STEP-014 (F-018): guard перепроверяется на свеже
   it('deleteArtifact: REQ со смешанным корректным и повреждённым STEP в Traceability блокирует удаление', async () => {
     const manifest = await loadManifest(INITIALIZED_MANIFEST);
     const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
-    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    const requirementsPath = path.join(root, 'docs/requirements/REQ-001-fixture-full.md');
     await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
     const fixture = await readFile(requirementsPath, 'utf8');
     await writeFile(requirementsPath, fixture.replace('- STEP: STEP-005', '- STEP: STEP-005, STEPP-009'), 'utf8');
@@ -756,7 +754,7 @@ describe('STEP-014 (F-018): guard перепроверяется на свеже
   it('deleteArtifact: REQ с повторяющейся STEP-меткой в Traceability блокирует удаление', async () => {
     const manifest = await loadManifest(INITIALIZED_MANIFEST);
     const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
-    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    const requirementsPath = path.join(root, 'docs/requirements/REQ-001-fixture-full.md');
     await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
     const fixture = await readFile(requirementsPath, 'utf8');
     await writeFile(requirementsPath, fixture.replace('- STEP: STEP-005', '- STEP: STEP-009\n- STEP: —'), 'utf8');
@@ -773,12 +771,12 @@ describe('STEP-014 (F-018): guard перепроверяется на свеже
   it('deleteArtifact: REQ с повторяющейся секцией Traceability блокирует удаление', async () => {
     const manifest = await loadManifest(INITIALIZED_MANIFEST);
     const targetPath = path.join(root, 'planning/tasks/STEP-009.md');
-    const requirementsPath = path.join(root, 'docs/requirements/SPEC.md');
+    const requirementsPath = path.join(root, 'docs/requirements/REQ-001-fixture-full.md');
     await writeFile(targetPath, STEP_TEMPLATE('В работе', 'NOT REVIEWED', ''), 'utf8');
     const fixture = await readFile(requirementsPath, 'utf8');
     await writeFile(
       requirementsPath,
-      fixture.replace('#### Traceability', '#### Traceability\n\n- STEP: STEP-009\n- ADR: —\n\n#### Traceability'),
+      fixture.replace('## Traceability', '## Traceability\n\n- STEP: STEP-009\n- ADR: —\n\n## Traceability'),
       'utf8'
     );
     vscode.workspace.findFiles.mockResolvedValue([{ fsPath: targetPath }]);

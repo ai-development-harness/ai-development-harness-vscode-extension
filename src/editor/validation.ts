@@ -1,4 +1,4 @@
-import { deepText, findSectionIndex, parseStepFile, parseAdrFile, parseReqSpec, splitSections } from '../parser/markdownParser';
+import { deepText, findSectionIndex, parseStepFile, parseAdrFile, parseReqFile, splitSections } from '../parser/markdownParser';
 import * as vscode from 'vscode';
 
 export interface EditorDiagnostic {
@@ -154,11 +154,11 @@ function diagnostic(
   return { message, offset: safeOffset, length: Math.max(1, Math.min(content.length - safeOffset, length)), severity };
 }
 
-export function createEditorIndex(sources: { requirements?: string; requirementsUri?: vscode.Uri; steps: Array<{ content: string; uri?: vscode.Uri }>; adrs: Array<{ content: string; uri?: vscode.Uri }> }): StepEditorIndex {
+export function createEditorIndex(sources: { requirements: Array<{ content: string; uri?: vscode.Uri }>; steps: Array<{ content: string; uri?: vscode.Uri }>; adrs: Array<{ content: string; uri?: vscode.Uri }> }): StepEditorIndex {
   const index: StepEditorIndex = { requirements: new Map(), steps: new Map(), adrs: new Map() };
-  if (sources.requirements) {
-    const requirements = parseReqSpec(sources.requirements);
-    if (requirements.ok) for (const item of requirements.value.data) index.requirements.set(item.id, { title: item.title, uri: sources.requirementsUri });
+  for (const source of sources.requirements) {
+    const requirement = parseReqFile(source.content);
+    if (requirement.ok) index.requirements.set(requirement.value.data.id, { title: requirement.value.data.title, uri: source.uri });
   }
   for (const source of sources.steps) {
     const step = parseStepFile(source.content);

@@ -21,7 +21,7 @@ export interface ParseWarning {
 }
 
 // ---------------------------------------------------------------------------
-// Manifest (.project/manifest.yaml) — ADR-001
+// Manifest (.harness/manifest.yaml) — ADR-001 / STEP-024
 // ---------------------------------------------------------------------------
 
 export interface HarnessManifestInfo {
@@ -96,7 +96,8 @@ export type ManifestError =
 export type MarkdownParseError =
   | { kind: 'empty-content' }
   | { kind: 'missing-heading' }
-  | { kind: 'missing-table' };
+  | { kind: 'missing-table' }
+  | { kind: 'multiple-headings' };
 
 export interface StepMutationPolicy {
   allowed: string[];

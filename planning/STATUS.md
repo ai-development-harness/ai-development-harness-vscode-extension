@@ -4,7 +4,7 @@
 
 ## Summary
 
-Проект инициализирован (`INIT PROJECT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015/STEP-021/STEP-022/STEP-023 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette с 11 MVP-командами + pre-dispatch валидацией (`STEP-005`), Sidebar Explorer (`STEP-006`), Smart STEP Editor (`STEP-007`, corrective `STEP-021`, `STEP-022` и CI corrective `STEP-023`), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 выполнены. Status Bar остаётся в будущем STEP-008.
+Проект инициализирован (`PROJECT INIT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015/STEP-021/STEP-022/STEP-023/STEP-024/STEP-026 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette (`STEP-005`), Sidebar Explorer (`STEP-006`), Smart STEP Editor (`STEP-007`, corrective STEP-021/STEP-022/STEP-023), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 имеют historical evidence для legacy layout. После `HARNESS UPDATE APPLY` их current compatibility с `.harness/**` требует STEP-024. Status Bar остаётся в будущем STEP-008.
 
 ## In progress
 
@@ -16,9 +16,15 @@
 
 ## Next unblocked work
 
-- `STEP-008` (Status Bar) — зависел от STEP-003, STEP-005, оба `Выполнено` — полностью разблокирован, доступен для `PLAN`.
+- `STEP-024` — критический corrective scope для `.harness/**`; зависимости выполнены, доступен для `STEP PLAN STEP-024`.
+- `STEP-008` (Status Bar) — зависимости выполнены, но выполняется после устранения blocking control-plane drift.
 
 ## Recent completed
+
+- `STEP-026` — corrective BUGFIX TextMate-подсветки ссылок REQ/STEP/ADR во
+  вложенном Markdown: отдельная injection grammar сохраняет стандартные Markdown
+  contexts и исключает code; navigation в prose и списке регресс-покрыта. PASS
+  (`planning/reviews/STEP-026/REVIEW-2026-09-20T1727Z.md`).
 
 - `STEP-021` — corrective BUGFIX Smart STEP Editor: устранены diagnostics
   циклов в несохранённом документе, stale validation и некорректная Markdown
@@ -95,3 +101,4 @@
 - Исходная 9-недельная оценка срока из артефакта-ТЗ (`TZ_REVIEW_AND_PLAN.md`) не переносится в этот roadmap как обязательство.
 - `RECONCILE PROJECT` (2026-09-18, `planning/audits/RECONCILE-2026-09-18.md`) нашёл, что `docs/requirements/SPEC.md` вопреки `AGENTS.md` §10 хранил собственное поле `Статус` для всех 10 REQ, и его значения разошлись с `docs/requirements/STATUS.md` (например, REQ-001 и REQ-006). Corrective `STEP-015` завершён: поле `Статус` удалено из всех 10 секций `SPEC.md`, Explorer переключён на новый парсер `docs/requirements/STATUS.md`; REQ-006 синхронизирован (`В работе` → `Частично`). PASS `planning/reviews/STEP-015/REVIEW-2026-09-19T1135Z.md` подтвердил remediation.
 - `OQ-004` разрешён ADR-005: manifest-first resolver допускает только два зарегистрированных schema-gap правила (`requirementsStatus`, `adrDirectory`) и запрещает consumer-level path guessing. Правила реализованы в neutral Parser/path-resolution resolver; соответствие подтверждено PASS `planning/reviews/STEP-015/REVIEW-2026-09-19T1135Z.md`.
+- Architecture drift (2026-09-20): `docs/requirements/` уже находится в per-file layout (`REQ-NNN-*.md` + `SPEC.md` как чистый индекс), а `manifest.sources.requirements` уже указывает на каталог `docs/requirements`. Production-код (`src/parser/markdownParser.ts:parseReqSpec`, `src/explorer/paths.ts`, `src/explorer/model.ts`, `src/explorer/actions.ts`, `src/editor/validation.ts`) всё ещё реализует более раннюю модель «один файл SPEC.md с несколькими REQ-NNN секциями» и читает `manifest.sources.requirements` как единственный файл. Результат: Sidebar Explorer не показывает узлы Requirements, REQ definition/validation в редакторе не резолвится, а delete-reference guard для REQ (`listReqsForDelete`) молча деградирует до `available: false`. Corrective `STEP-025` создан (`Depends on: STEP-024`, чтобы не конфликтовать с параллельной control-plane миграцией по тем же файлам). Устранено `STEP-025`: добавлен `parseReqFile` (per-file parser), `src/explorer/paths.ts`/`model.ts`/`actions.ts` и `src/editor/validation.ts`/`activation.ts` переведены на per-file `docs/requirements/REQ-NNN-*.md`; попутно обнаружен и устранён второй независимый drift derivation `requirementsStatus` (зафиксирован `ADR-012`, `Supersedes: ADR-005`).

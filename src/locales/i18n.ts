@@ -7,7 +7,7 @@ import enDictionary from './en.json';
 /**
  * REQ-006: RU default, EN, автоопределение по `vscode.env.language`, ручное
  * переключение через `harness.changeLanguage`, персист в
- * `.project/harness-config.json`. Этот путь — фиксированный extension-owned
+ * `.harness/harness-config.json`. Этот путь — фиксированный extension-owned
  * settings-файл вне ADR-001 (не Harness-протокольный артефакт из манифеста),
  * поэтому отсутствие файла — ожидаемое первое включение (`ok({})`), а не
  * `NotFound`-ошибка, как для обязательного `manifest.yaml` в `yamlParser.ts`.

@@ -4,13 +4,13 @@
 
 | REQ | Название | Статус | Реализующие STEP | Evidence |
 |---|---|---|---|---|
-| REQ-001 | Command Palette с канонической командной поверхностью | Частично | STEP-005, STEP-009 | `planning/tasks/STEP-005.md` (Статус: Выполнено), PASS `planning/reviews/STEP-005/REVIEW-2026-09-17T2350.md`; PASS `planning/reviews/STEP-009/REVIEW-2026-09-19T2038Z.md` подтвердил manual handoff для agent-requiring paths. REQ остаётся частичным: его acceptance требует отображать результат выполнения, а MVP намеренно не выполняет agent lifecycle автоматически. |
-| REQ-002 | Sidebar Explorer артефактов проекта | Выполнено | STEP-006, STEP-015, STEP-016 | `planning/tasks/STEP-006.md`, PASS `planning/reviews/STEP-006/REVIEW-2026-09-18T1108.md`; PASS `planning/reviews/STEP-015/REVIEW-2026-09-19T1135Z.md`; ADR-005 подтверждён PASS `planning/reviews/STEP-016/REVIEW-2026-09-19T0951Z.md` |
-| REQ-003 | Smart-редактор STEP-файлов | Выполнено | STEP-007, STEP-016, STEP-021, STEP-022, STEP-023 | Базовая реализация: `planning/tasks/STEP-007.md`, PASS `planning/reviews/STEP-007/REVIEW-2026-09-20T0708Z.md`; ADR-005 подтверждён PASS `planning/reviews/STEP-016/REVIEW-2026-09-19T0951Z.md`; corrective STEP-021 подтверждён PASS `planning/reviews/STEP-021/REVIEW-2026-09-20T0755Z.md`; manifest-driven custom layout подтверждён PASS `planning/reviews/STEP-022/REVIEW-2026-09-20T0917Z.md`; isolated pre-activation CI evidence подтверждено PASS `planning/reviews/STEP-023/REVIEW-2026-09-20T0958Z.md`. |
-| REQ-004 | Status Bar с состоянием проекта | Запланировано | STEP-008 | — |
-| REQ-005 | Manual handoff к agent CLI в MVP | Выполнено | STEP-001, STEP-009, STEP-017, STEP-018, STEP-019, STEP-020 | PASS `planning/reviews/STEP-009/REVIEW-2026-09-20T0422Z.md`: manual handoff покрывает exact command/safe descriptor, localized blocker и no-spawn boundary. Automatic lifecycle остаётся отдельной future capability и требует нового ADR и implementation STEP. |
-| REQ-006 | Локализация UI (RU/EN) | Частично | STEP-004, STEP-009, STEP-010, STEP-020 | PASS `planning/reviews/STEP-009/REVIEW-2026-09-19T2038Z.md` подтвердил RU/EN manual-handoff representation и blocker. Полная локализация остального UI остаётся в STEP-010. |
-| REQ-007 | Dependency graph visualization (Phase 2) | Отложено | — | — |
-| REQ-008 | Health Dashboard (Phase 2) | Отложено | — | — |
-| REQ-009 | Mutation Policy enforcement warnings (Phase 2) | Отложено | — | — |
-| REQ-010 | Keyboard shortcuts (Phase 2) | Отложено | — | — |
+| [REQ-001](REQ-001-command-palette.md) | Command Palette с канонической командной поверхностью | Частично | STEP-005, STEP-009, STEP-024, STEP-025 | Предыдущее evidence действительно только для legacy layout; `STEP-024` восстанавливает совместимость с current control-plane `.harness/**`; `STEP-025` устраняет drift REQ delete-guard от per-file `docs/requirements/`. |
+| [REQ-002](REQ-002-sidebar-explorer.md) | Sidebar Explorer артефактов проекта | Частично | STEP-006, STEP-015, STEP-016, STEP-024, STEP-025 | Предыдущее evidence действительно только для legacy layout; `STEP-024` восстанавливает совместимость с current control-plane `.harness/**`; `STEP-025` устраняет drift чтения REQ-узлов от per-file `docs/requirements/`. |
+| [REQ-003](REQ-003-step-editor.md) | Smart-редактор STEP-файлов | Частично | STEP-007, STEP-016, STEP-021, STEP-022, STEP-023, STEP-024, STEP-026 | Предыдущее evidence действительно только для legacy layout; `STEP-024` восстанавливает совместимость с current control-plane `.harness/**`; `STEP-026` исправляет неполную TextMate-подсветку ссылок во вложенном Markdown. |
+| [REQ-004](REQ-004-status-bar.md) | Status Bar с состоянием проекта | Запланировано | STEP-008 | — |
+| [REQ-005](REQ-005-manual-handoff.md) | Manual handoff к agent CLI в MVP | Частично | STEP-001, STEP-009, STEP-017, STEP-018, STEP-019, STEP-020, STEP-024 | Предыдущее evidence действительно только для legacy layout; `STEP-024` восстанавливает совместимость с current control-plane `.harness/**`. |
+| [REQ-006](REQ-006-localization.md) | Локализация UI (RU/EN) | Частично | STEP-004, STEP-009, STEP-010, STEP-020, STEP-024 | Предыдущее evidence действительно только для legacy layout; `STEP-024` восстанавливает совместимость с current control-plane `.harness/**`. |
+| [REQ-007](REQ-007-dependency-graph.md) | Dependency graph visualization (Phase 2, отложено) | Отложено | — | — |
+| [REQ-008](REQ-008-health-dashboard.md) | Health Dashboard (Phase 2, отложено) | Отложено | — | — |
+| [REQ-009](REQ-009-mutation-policy-warnings.md) | Mutation Policy enforcement warnings (Phase 2, отложено) | Отложено | — | — |
+| [REQ-010](REQ-010-keyboard-shortcuts.md) | Keyboard shortcuts (Phase 2, отложено) | Отложено | — | — |

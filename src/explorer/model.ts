@@ -1,5 +1,5 @@
 import * as posix from 'node:path/posix';
-import { parseAdrFile, parseReqSpec, parseStepFile } from '../parser/markdownParser';
+import { parseAdrFile, parseReqFile, parseStepFile } from '../parser/markdownParser';
 import { parseReqStatus, reqStatusMap } from '../parser/requirementsStatus';
 import { AdrData, ReqData, StepData } from '../parser/types';
 import { EMPTY_FILTER_STATE, FilterState, applyStepFilters, matchesIdQuery } from './filter';
@@ -87,15 +87,13 @@ async function buildNodesForFile(
     return [{ kind: 'step', uri: relPath, data: parsed.value.data, groupId }];
   }
   if (parseAs === 'req') {
-    const parsed = parseReqSpec(content);
+    const parsed = parseReqFile(content);
     if (!parsed.ok) {
-      console.warn(`[harness.explorer] failed to parse ${relPath} as REQ spec:`, parsed.error);
+      console.warn(`[harness.explorer] failed to parse ${relPath} as REQ file:`, parsed.error);
       return undefined;
     }
     const statusByReq = reqStatuses ?? new Map<string, string>();
-    return parsed.value.data.map(
-      (data) => ({ kind: 'req', uri: relPath, data, status: statusByReq.get(data.id) ?? '', groupId }) as const
-    );
+    return [{ kind: 'req', uri: relPath, data: parsed.value.data, status: statusByReq.get(parsed.value.data.id) ?? '', groupId }];
   }
   if (parseAs === 'adr') {
     const parsed = parseAdrFile(content);
@@ -127,8 +125,7 @@ export async function loadGroupChildren(
     const relPaths: string[] =
       item.kind === 'file' ? (await reader.exists(item.relPath)) ? [item.relPath] : [] : await reader.list(item.relDir, item.glob);
     const parseAs = item.parseAs;
-    const reqStatuses =
-      item.kind === 'file' && item.statusFrom !== undefined ? await readReqStatuses(item.statusFrom, reader) : undefined;
+    const reqStatuses = item.statusFrom !== undefined ? await readReqStatuses(item.statusFrom, reader) : undefined;
     for (const relPath of relPaths) {
       const built = await buildNodesForFile(source.groupId, relPath, parseAs, reader, reqStatuses);
       if (built) nodes.push(...built);

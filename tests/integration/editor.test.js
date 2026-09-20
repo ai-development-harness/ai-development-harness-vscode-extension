@@ -46,27 +46,30 @@ suite('STEP editor (STEP-007)', () => {
     }
   });
 
-  test('Definition Provider ведёт по REQ, ADR и STEP reference', async () => {
+  test('Definition Provider ведёт по REQ, ADR и STEP reference в prose и списке', async () => {
     const ext = vscode.extensions.getExtension('ai-development-harness.harness-navigator');
     await ext.activate();
     const root = vscode.workspace.workspaceFolders[0].uri.fsPath;
     const target = path.join(root, 'planning', 'tasks', 'STEP-009.md');
     const fixture = await fs.readFile(path.join(root, 'planning', 'tasks', 'STEP-1.md'), 'utf8');
     try {
-      await fs.writeFile(target, `${fixture}\nREQ-001 ADR-001 STEP-1`, 'utf8');
+      await fs.writeFile(target, `${fixture}\nREQ-001 ADR-001 STEP-1\n- REQ-001 ADR-001 STEP-1`, 'utf8');
       const document = await vscode.workspace.openTextDocument(vscode.Uri.file(target));
-      const locationsFor = async (id) => {
-        const line = document.lineCount - 1;
+      const locationsFor = async (id, line) => {
         const character = document.lineAt(line).text.indexOf(id) + 1;
         return vscode.commands.executeCommand('vscode.executeDefinitionProvider', document.uri, new vscode.Position(line, character));
       };
 
-      const req = await locationsFor('REQ-001');
-      const adr = await locationsFor('ADR-001');
-      const step = await locationsFor('STEP-1');
-      assert.ok(req.some((location) => location.uri.fsPath.endsWith(path.join('docs', 'requirements', 'SPEC.md'))));
-      assert.ok(adr.some((location) => location.uri.fsPath.endsWith(path.join('docs', 'adr', 'ADR-001-editor-fixture.md'))));
-      assert.ok(step.some((location) => location.uri.fsPath.endsWith(path.join('planning', 'tasks', 'STEP-1.md'))));
+      // FIX STEP-026: navigation не зависит от TextMate scopes, но оба контекста
+      // остаются regression boundary, чтобы visual fix не затронул Definition Provider.
+      for (const line of [document.lineCount - 2, document.lineCount - 1]) {
+        const req = await locationsFor('REQ-001', line);
+        const adr = await locationsFor('ADR-001', line);
+        const step = await locationsFor('STEP-1', line);
+        assert.ok(req.some((location) => location.uri.fsPath.endsWith(path.join('docs', 'requirements', 'REQ-001-editor-definition.md'))));
+        assert.ok(adr.some((location) => location.uri.fsPath.endsWith(path.join('docs', 'adr', 'ADR-001-editor-fixture.md'))));
+        assert.ok(step.some((location) => location.uri.fsPath.endsWith(path.join('planning', 'tasks', 'STEP-1.md'))));
+      }
     } finally {
       await fs.rm(target, { force: true });
     }

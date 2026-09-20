@@ -1,6 +1,6 @@
 # Architecture
 
-> Архитектурный baseline создаётся `INIT PROJECT` только на уровне решений, поддержанных brief/requirements или необходимых для начала roadmap. Неопределённости не превращаются в выдуманные факты.
+> Архитектурный baseline создаётся `PROJECT INIT` только на уровне решений, поддержанных brief/requirements или необходимых для начала roadmap. Неопределённости не превращаются в выдуманные факты.
 
 ## System context
 
@@ -8,7 +8,7 @@ VSCode extension, работающий над git-репозиторием, ст
 
 ## Основные компоненты / границы
 
-- **Parser layer** (`src/parser/`) — чтение `.project/manifest.yaml`, парсинг STEP/REQ/ADR-файлов (labeled markdown, см. ADR-002), структурный разбор `EXECUTION_PROTOCOL.md`, разбор таблицы `docs/requirements/STATUS.md` (projection-таблица, единственный canonical источник lifecycle-статуса REQ, `STEP-015`) и единый artifact-path resolver/registry по ADR-005. Manifest остаётся primary source; для schema gaps разрешены только зарегистрированные derivations, привязанные к поддерживаемой manifest generation. Остальные компоненты получают готовые workspace-relative paths и не вычисляют layout самостоятельно.
+- **Parser layer** (`src/parser/`) — чтение `.harness/manifest.yaml`, парсинг STEP/REQ/ADR-файлов (labeled markdown, см. ADR-002), структурный разбор `EXECUTION_PROTOCOL.md`, разбор таблицы `docs/requirements/STATUS.md` (projection-таблица, единственный canonical источник lifecycle-статуса REQ, `STEP-015`) и единый artifact-path resolver/registry по ADR-005. Manifest остаётся primary source; для schema gaps разрешены только зарегистрированные derivations, привязанные к поддерживаемой manifest generation. Остальные компоненты получают готовые workspace-relative paths и не вычисляют layout самостоятельно.
 - **Command layer** (`src/commands/`) — регистрация Command Palette команд, pre-dispatch валидация (INIT guard, dependencies, mutation policy) и локальный manual handoff по ADR-010.
 - **Agent integration layer** (`src/api/`) — текущая fail-closed адаптерная поверхность manual handoff; automatic invocation не является MVP flow. Historical CLI transport ADR-004 может вернуться только с новым ADR и platform evidence; авторизация CLI остаётся пользовательской по ADR-009.
 - **Explorer** (`src/explorer/`) — `TreeDataProvider` поверх Parser layer.
@@ -36,7 +36,7 @@ ADR, supported platform matrix и доказанного OS-level containment.
 
 ## Security boundaries
 
-Плагин использует explicit manifest paths или зарегистрированные derived paths ADR-005, а также собственный фиксированный путь настроек `.project/harness-config.json` (STEP-004: extension-owned settings, не источник protocol topology). Derivation использует только константный suffix и manifest anchor; произвольный filesystem probing запрещён. Текущий Parser/filesystem boundary ещё не проверяет lexical containment или `realpath`: manifest с traversal либо symlink может вывести artifact-read path за пределы workspace. Это известный security debt вне scope STEP-009 и требует отдельного corrective STEP; данный baseline не выдаёт его за реализованную защиту. Extension Host не запускает shell, `git` или agent CLI. В MVP ADR-010 требует manual handoff: original free text не передаётся во внутренние UI surfaces по ADR-011, а пользователь самостоятельно запускает и авторизует CLI в контролируемом terminal. Плагин не отправляет телеметрию и не обращается к внешним сервисам через agent process.
+Плагин использует explicit manifest paths или зарегистрированные derived paths ADR-005, а также собственный фиксированный путь настроек `.harness/harness-config.json` (STEP-004: extension-owned settings, не источник protocol topology). Derivation использует только константный suffix и manifest anchor; произвольный filesystem probing запрещён. Текущий Parser/filesystem boundary ещё не проверяет lexical containment или `realpath`: manifest с traversal либо symlink может вывести artifact-read path за пределы workspace. Это известный security debt вне scope STEP-009 и требует отдельного corrective STEP; данный baseline не выдаёт его за реализованную защиту. Extension Host не запускает shell, `git` или agent CLI. В MVP ADR-010 требует manual handoff: original free text не передаётся во внутренние UI surfaces по ADR-011, а пользователь самостоятельно запускает и авторизует CLI в контролируемом terminal. Плагин не отправляет телеметрию и не обращается к внешним сервисам через agent process.
 
 ## Reliability / observability
 
@@ -69,9 +69,10 @@ ADR-005 закрепляет Parser/path-resolution boundary единствен�
 
 `harness-step` language contribution содержит статический `filenamePatterns` для default layout: VS Code читает contribution из `package.json` до доступа extension к workspace manifest, поэтому declarative glob не может быть manifest-driven. После чтения manifest extension через публичный `vscode.languages.setTextDocumentLanguage` назначает `harness-step` открытому `STEP-*.md` только внутри manifest-resolved `protocol.taskDirectory`; проверка использует нормализованный relative path, а не string prefix. Это сохраняет `filenamePatterns` fast/default association и подключает language-only providers также при custom layout. STEP index и watcher получают `protocol.taskDirectory` исключительно из manifest через Parser boundary; fallback-угадывание файловой topology запрещено ADR-005.
 
-Публичный Extension API VS Code 1.138 не раскрывает TextMate grammar registry или
-token scopes уже зарегистрированного Markdown языка; поэтому extension не
-использует internal API, новую test dependency или vendored grammar ради scope
-inspection. Совместимость грамматик доказывается composition `include` по
-стандартному TextMate contract и загрузкой `harness-step` в Extension Development
-Host; прямой assertion Markdown scopes требует отдельного поддерживаемого API.
+Публичный Extension API VS Code не раскрывает TextMate grammar registry или token
+scopes уже зарегистрированного Markdown языка; extension по-прежнему не использует
+internal API или vendored grammar. Для regression STEP-026 devDependencies
+`vscode-textmate` и `vscode-oniguruma` воспроизводят только публичный TextMate
+contract в unit-тесте: они не попадают в runtime VSIX и проверяют injection grammar
+на контролируемых Markdown-контекстах. Загрузка `harness-step` в Extension
+Development Host остаётся отдельной проверкой declarative contribution.

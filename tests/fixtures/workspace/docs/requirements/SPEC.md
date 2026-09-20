@@ -1,23 +1,9 @@
-## Requirements
+# Requirements
 
-### REQ-001 — Editor definition fixture
+> Projection-индекс. Определение, rationale, acceptance и traceability каждого REQ хранятся только в отдельном `REQ-NNN-*.md`.
 
-**Приоритет:** Средний
-**Источник:** tests
+## Требования
 
-#### Requirement
-
-Definition Provider открывает canonical requirement file.
-
-#### Rationale
-
-Переход по `REQ-NNN` должен быть проверяем в реальном Extension Host.
-
-#### Acceptance
-
-- `REQ-001` резолвится в этот файл.
-
-#### Traceability
-
-- STEP: STEP-007
-- ADR: —
+| REQ | Название | Canonical file |
+|---|---|---|
+| REQ-001 | Editor definition fixture | REQ-001-editor-definition.md |

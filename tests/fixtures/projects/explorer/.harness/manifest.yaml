@@ -1,0 +1,44 @@
+harness:
+  version: "1"
+  release: "0.2.4"
+
+project:
+  initialized: true
+  name: explorer-fixture
+  initializedAt: "2026-09-18T00:00:00Z"
+
+language:
+  default: ru
+  agentResponses: ru
+  documentation: ru
+  commitMessages: ru
+  codeComments: ru
+  testNames: ru
+  fixtures: ru
+  githubTemplates: ru
+  releaseNotes: ru
+
+sources:
+  localBrief: PROJECT_BRIEF.local.md
+  projectOverview: docs/PROJECT.md
+  requirements: docs/requirements
+  architecture: docs/architecture.md
+  roadmap: planning/PLAN.md
+  status: planning/STATUS.md
+
+protocol:
+  file: planning/EXECUTION_PROTOCOL.md
+  taskDirectory: planning/tasks
+  reviewDirectory: planning/reviews
+  auditDirectory: planning/audits
+  skillSearchDirectory: planning/skill-searches
+  skillRegistry: docs/skills/REGISTRY.md
+  harnessUpdateDirectory: planning/harness-updates
+
+repository:
+  gitPolicy: .harness/git-policy.toml
+  harnessPolicy: .harness/harness-policy.toml
+  harnessUpdatePolicy: .harness/harness-update.toml
+  harnessLock: .harness/harness.lock.json
+  harnessValidation: tools/harness/validate.py
+  harnessCI: .github/workflows/harness-integrity.yml

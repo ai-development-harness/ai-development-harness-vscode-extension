@@ -12,11 +12,11 @@ async function loadManifest(): Promise<ManifestData> {
 }
 
 describe('watchedPaths', () => {
-  it('инвалидирует Requirements и при изменении SPEC.md, и при изменении derived STATUS.md', async () => {
+  it('инвалидирует Requirements и при изменении per-file REQ-*.md, и при изменении derived STATUS.md', async () => {
     const manifest = await loadManifest();
 
     expect(watchedPaths(manifest).filter((path) => path.groupId === 'requirements')).toEqual([
-      { groupId: 'requirements', relGlob: manifest.sources.requirements },
+      { groupId: 'requirements', relGlob: `${manifest.sources.requirements}/REQ-*.md` },
       { groupId: 'requirements', relGlob: 'docs/requirements/STATUS.md' },
     ]);
   });
@@ -26,7 +26,7 @@ describe('watchedPaths', () => {
     const unsupported = { ...manifest, harness: { ...manifest.harness, version: '2' } };
 
     expect(watchedPaths(unsupported).filter((path) => path.groupId === 'requirements')).toEqual([
-      { groupId: 'requirements', relGlob: unsupported.sources.requirements },
+      { groupId: 'requirements', relGlob: `${unsupported.sources.requirements}/REQ-*.md` },
     ]);
   });
 
@@ -47,5 +47,13 @@ describe('watchedPaths', () => {
     expect(watchedPaths(unsupported).filter((path) => path.groupId === 'architecture')).toEqual([
       { groupId: 'architecture', relGlob: unsupported.sources.architecture },
     ]);
+  });
+
+  it('не содержит ни одного watched пути с префиксом legacy `.project/` (FIX STEP-024 F-001)', async () => {
+    const manifest = await loadManifest();
+
+    for (const { relGlob } of watchedPaths(manifest)) {
+      expect(relGlob.startsWith('.project/')).toBe(false);
+    }
   });
 });

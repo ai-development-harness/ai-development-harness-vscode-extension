@@ -5,7 +5,7 @@ VSCode extension, превращающая редактор в IDE-слой на
 
 Проект инициализирован, product code ещё не написан. Roadmap — 13 STEP (`STEP-001`..`STEP-013`), MVP покрывает 11 из 24 канонических команд протокола (см. `ADR-003`). Ближайший открытый вопрос — механизм вызова агента для выполнения команд (`STEP-001`, `docs/OPEN_QUESTIONS.md` OQ-001).
 
-Следующая рекомендуемая команда: `PLAN STEP-001` (или `PLAN STEP-002` параллельно — обе не имеют зависимостей).
+Следующая рекомендуемая команда: `STEP PLAN STEP-001` (или `STEP PLAN STEP-002` параллельно — обе не имеют зависимостей).
 
 Подробнее: [`docs/PROJECT.md`](docs/PROJECT.md) · [требования](docs/requirements/SPEC.md) · [архитектура](docs/architecture.md) · [roadmap](planning/PLAN.md)
 <!-- PROJECT:END -->
@@ -21,18 +21,18 @@ Harness protocol не привязан к одной модели или одн�
 
 ## Документация Harness
 
-- [Начало работы](docs/harness/GETTING_STARTED.md)
-- [Как устроена документация и связи REQ / ADR / STEP / PLAN / STATUS](docs/harness/DOCUMENT_MODEL.md)
-- [Глоссарий терминов Harness](docs/harness/GLOSSARY.md)
-- [Структура репозитория](docs/harness/REPOSITORY_LAYOUT.md)
-- [Команды](docs/harness/COMMANDS.md)
-- [Execution Protocol](planning/EXECUTION_PROTOCOL.md)
-- [Обновление Harness в существующем проекте](docs/harness/UPDATES.md)
-- [Агенты, модели и reasoning effort](docs/harness/AGENT_CONFIGURATION.md)
-- [Claude Code adapter](docs/harness/CLAUDE_CODE.md)
-- [Git workflow: GIT CHECK / GIT COMMIT / GIT PUSH / GIT PR / GIT SYNC](docs/harness/GIT_WORKFLOW.md)
-- [CI и Harness Integrity](docs/harness/CI.md)
-- [Skills: SKILL FIND / SKILL INSTALL / SKILL CREATE](docs/harness/SKILL_MANAGEMENT.md)
-- [Синтаксис команд и цепочек](docs/harness/COMMAND_SYNTAX.md)
-- [Таблица допустимых переходов команд](docs/harness/COMMAND_TRANSITIONS.md)
-- [Полное оглавление документации Harness](docs/harness/README.md)
+- [Начало работы](.harness/docs/GETTING_STARTED.md)
+- [Как устроена документация и связи REQ / ADR / STEP / PLAN / STATUS](.harness/docs/DOCUMENT_MODEL.md)
+- [Глоссарий терминов Harness](.harness/docs/GLOSSARY.md)
+- [Структура репозитория](.harness/docs/REPOSITORY_LAYOUT.md)
+- [Команды](.harness/docs/COMMANDS.md)
+- [Execution Protocol](.harness/docs/EXECUTION_PROTOCOL.md)
+- [Обновление Harness в существующем проекте](.harness/docs/UPDATES.md)
+- [Агенты, модели и reasoning effort](.harness/docs/AGENT_CONFIGURATION.md)
+- [Claude Code adapter](.harness/docs/CLAUDE_CODE.md)
+- [Git workflow: GIT CHECK / GIT COMMIT / GIT PUSH / GIT PR / GIT SYNC](.harness/docs/GIT_WORKFLOW.md)
+- [CI и Harness Integrity](.harness/docs/CI.md)
+- [Skills: SKILL FIND / SKILL INSTALL / SKILL CREATE](.harness/docs/SKILL_MANAGEMENT.md)
+- [Синтаксис команд и цепочек](.harness/docs/COMMAND_SYNTAX.md)
+- [Таблица допустимых переходов команд](.harness/docs/COMMAND_TRANSITIONS.md)
+- [Полное оглавление документации Harness](.harness/docs/README.md)

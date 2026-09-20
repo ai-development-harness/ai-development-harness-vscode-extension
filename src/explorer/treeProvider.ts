@@ -20,7 +20,7 @@ export class HarnessTreeDataProvider implements vscode.TreeDataProvider<HarnessN
 
   /**
    * FIX STEP-006 (F-013): не `readonly` — `setManifest` пересчитывает эту
-   * ссылку, когда `.project/manifest.yaml` меняется (например,
+   * ссылку, когда `.harness/manifest.yaml` меняется (например,
    * `protocol.taskDirectory`). До фикса провайдер хранил `sources`, вычисленные
    * один раз в конструкторе из первоначального манифеста, и продолжал
    * указывать на старые пути после перепарса манифеста в `activation.ts`.
@@ -55,7 +55,7 @@ export class HarnessTreeDataProvider implements vscode.TreeDataProvider<HarnessN
 
   /**
    * FIX STEP-006 (F-013): вызывается из колбэка перепарса манифеста в
-   * `activation.ts`, когда сработал watcher на `.project/manifest.yaml`.
+   * `activation.ts`, когда сработал watcher на `.harness/manifest.yaml`.
    * Пересчитывает `sources` той же функцией, что и конструктор, сбрасывает
    * кэш групп и инвалидирует дерево — иначе смена, например,
    * `protocol.taskDirectory` не отражалась бы в дереве до перезапуска окна.

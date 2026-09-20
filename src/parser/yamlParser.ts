@@ -3,7 +3,7 @@ import { parse as parseYaml } from 'yaml';
 import { ManifestData, ManifestError, Result, err, ok } from './types';
 
 /**
- * ADR-001: единственный источник путей протокола — `.project/manifest.yaml`
+ * ADR-001: единственный источник путей протокола — `.harness/manifest.yaml`
  * конкретного проекта. Хардкод директорий и угадывание по вариантам — не
  * применяются: отсутствующий/повреждённый манифест даёт явную типизированную
  * ошибку, а не исключение и не молчаливый fallback.

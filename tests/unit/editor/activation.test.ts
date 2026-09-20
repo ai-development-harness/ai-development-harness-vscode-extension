@@ -21,9 +21,9 @@ const editorManifest: ManifestData = {
   harness: { version: '1', release: '0.4.0' },
   project: { initialized: true, name: 'test', initializedAt: '2026-01-01' },
   language: { default: 'ru', agentResponses: 'ru', documentation: 'ru', commitMessages: 'ru', codeComments: 'ru', testNames: 'ru', fixtures: 'ru', githubTemplates: 'ru', releaseNotes: 'ru' },
-  sources: { localBrief: 'PROJECT_BRIEF.local.md', projectOverview: 'docs/PROJECT.md', requirements: 'docs/requirements/SPEC.md', architecture: 'docs/architecture.md', roadmap: 'planning/PLAN.md', status: 'planning/STATUS.md' },
+  sources: { localBrief: 'PROJECT_BRIEF.local.md', projectOverview: 'docs/PROJECT.md', requirements: 'docs/requirements', architecture: 'docs/architecture.md', roadmap: 'planning/PLAN.md', status: 'planning/STATUS.md' },
   protocol: { file: 'planning/EXECUTION_PROTOCOL.md', taskDirectory: 'custom/steps', reviewDirectory: 'planning/reviews', auditDirectory: 'planning/audits', skillSearchDirectory: 'planning/skill-searches', skillRegistry: 'docs/skills/REGISTRY.md', harnessUpdateDirectory: 'planning/harness-updates' },
-  repository: { gitPolicy: '.project/git-policy.toml', harnessPolicy: '.project/harness-policy.toml', harnessUpdatePolicy: '.project/harness-update.toml', harnessLock: '.project/harness.lock.json', harnessValidation: 'tools/harness/validate.py', harnessCI: '.github/workflows/harness-integrity.yml' },
+  repository: { gitPolicy: '.harness/git-policy.toml', harnessPolicy: '.harness/harness-policy.toml', harnessUpdatePolicy: '.harness/harness-update.toml', harnessLock: '.harness/harness.lock.json', harnessValidation: 'tools/harness/validate.py', harnessCI: '.github/workflows/harness-integrity.yml' },
 };
 
 const minimalStep = `# STEP-101 — Тест
@@ -413,6 +413,18 @@ describe('editor language compatibility', () => {
     }
   });
 
+  it('не наблюдает ни одного пути с префиксом legacy `.project/` (FIX STEP-024 F-001)', () => {
+    for (const pattern of stepEditorWatchPatterns(editorManifest)) {
+      expect(pattern.startsWith('.project/')).toBe(false);
+    }
+  });
+
+  it('STEP-025: наблюдает per-file `<requirements>/REQ-*.md`, а не голый каталог (каталог как RelativePattern не матчится ни на что)', () => {
+    const patterns = stepEditorWatchPatterns(editorManifest);
+    expect(patterns).toContain(`${editorManifest.sources.requirements}/REQ-*.md`);
+    expect(patterns).not.toContain(editorManifest.sources.requirements);
+  });
+
   it('задаёт парный HTML block comment и композирует стандартный Markdown scope', async () => {
     const root = path.resolve(__dirname, '../../..');
     const [configuration, grammar, manifest] = await Promise.all([
@@ -422,11 +434,24 @@ describe('editor language compatibility', () => {
     ]);
     const languageConfiguration = JSON.parse(configuration) as { comments: Record<string, unknown> };
     const grammarConfiguration = JSON.parse(grammar) as { patterns: Array<Record<string, string>> };
-    const packageConfiguration = JSON.parse(manifest) as { contributes: { languages: Array<{ id: string; filenamePatterns: string[] }> } };
+    const packageConfiguration = JSON.parse(manifest) as {
+      contributes: {
+        languages: Array<{ id: string; filenamePatterns: string[] }>;
+        grammars: Array<{ scopeName: string; path: string; injectTo?: string[] }>;
+      };
+    };
 
     expect(languageConfiguration.comments).toEqual({ blockComment: ['<!--', '-->'] });
     expect(grammarConfiguration.patterns.at(-1)).toEqual({ include: 'text.html.markdown' });
     expect(grammarConfiguration.patterns.slice(0, -1)).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'keyword.control.harness-step' })]));
+    expect(grammarConfiguration.patterns).not.toEqual(expect.arrayContaining([expect.objectContaining({ name: 'constant.other.reference.harness-step' })]));
+    expect(packageConfiguration.contributes.grammars).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        scopeName: 'text.harness-step.references',
+        path: './syntaxes/harness-step-references.tmLanguage.json',
+        injectTo: ['text.harness-step.markdown'],
+      }),
+    ]));
     expect(packageConfiguration.contributes.languages.find((language) => language.id === 'harness-step')?.filenamePatterns).toEqual(['**/planning/tasks/STEP-*.md']);
   });
 });
