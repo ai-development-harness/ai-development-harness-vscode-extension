@@ -24,6 +24,7 @@
 | STEP-018 | Принять ADR об ответственности пользователя за авторизацию agent CLI | ADR | Критический | Выполнено | STEP-017 | REQ-005 |
 | STEP-019 | Выбрать безопасный automatic executor или пересмотреть scope REQ-005 | ADR | Критический | Выполнено | STEP-017, STEP-018 | REQ-005 |
 | STEP-020 | Принять ADR о безопасном представлении free-text команд в manual handoff MVP | ADR | Критический | Выполнено | STEP-019 | REQ-005, REQ-006 |
+| STEP-021 | Корректировка Smart STEP Editor по findings review STEP-007 | BUGFIX | Высокий | Выполнено | STEP-007, STEP-016 | REQ-003 |
 
 ## Не запланировано (Phase 2, деферред REQ)
 
@@ -31,5 +32,4 @@ REQ-007 (Dependency graph), REQ-008 (Health Dashboard), REQ-009 (Mutation Policy
 
 ## Незаблокированная работа прямо сейчас
 
-STEP-001..STEP-007, STEP-009 и STEP-014..STEP-020 `Выполнено`. `STEP-008`
-полностью разблокирован для `PLAN` и является следующей работой по roadmap.
+STEP-008 — Status Bar — полностью разблокирован для `PLAN`.

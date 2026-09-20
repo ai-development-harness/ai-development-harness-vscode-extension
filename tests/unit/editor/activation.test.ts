@@ -1,6 +1,109 @@
-import { CodeLensRefreshController } from '../../../src/editor/activation';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as vscode from 'vscode';
+import {
+  CodeLensRefreshController,
+  DocumentValidationScheduler,
+  loadIndex,
+  registerValidationListeners,
+  stepEditorSelector,
+  stepEditorWatchPatterns,
+  ValidationController,
+} from '../../../src/editor/activation';
+import type { ManifestData } from '../../../src/parser/types';
 
 type IndexRevision = { revision: string };
+
+const editorManifest: ManifestData = {
+  harness: { version: '1', release: '0.4.0' },
+  project: { initialized: true, name: 'test', initializedAt: '2026-01-01' },
+  language: { default: 'ru', agentResponses: 'ru', documentation: 'ru', commitMessages: 'ru', codeComments: 'ru', testNames: 'ru', fixtures: 'ru', githubTemplates: 'ru', releaseNotes: 'ru' },
+  sources: { localBrief: 'PROJECT_BRIEF.local.md', projectOverview: 'docs/PROJECT.md', requirements: 'docs/requirements/SPEC.md', architecture: 'docs/architecture.md', roadmap: 'planning/PLAN.md', status: 'planning/STATUS.md' },
+  protocol: { file: 'planning/EXECUTION_PROTOCOL.md', taskDirectory: 'custom/steps', reviewDirectory: 'planning/reviews', auditDirectory: 'planning/audits', skillSearchDirectory: 'planning/skill-searches', skillRegistry: 'docs/skills/REGISTRY.md', harnessUpdateDirectory: 'planning/harness-updates' },
+  repository: { gitPolicy: '.project/git-policy.toml', harnessPolicy: '.project/harness-policy.toml', harnessUpdatePolicy: '.project/harness-update.toml', harnessLock: '.project/harness.lock.json', harnessValidation: 'tools/harness/validate.py', harnessCI: '.github/workflows/harness-integrity.yml' },
+};
+
+const minimalStep = `# STEP-101 — Тест
+
+**Статус:** Запланировано
+**Type:** BUGFIX
+**Приоритет:** Высокий
+**Фаза:** MVP
+**Depends on:** —
+
+## Requirements
+
+- REQ-001
+
+## ADR
+
+- ADR-001
+
+## Risk flags
+
+- none
+
+## Goal
+
+Тест
+
+## Context
+
+Тест
+
+## Scope
+
+- Тест
+
+## Mutation policy
+
+### Allowed
+
+- src/editor
+
+### Conditional
+
+- —
+
+### Forbidden
+
+- —
+
+## Out of scope
+
+- —
+
+## Acceptance criteria
+
+- Тест
+
+## Verification
+
+- test
+
+## Deliverables
+
+- test
+
+## Implementation plan
+
+**Plan status:** Ready
+**Plan revision:** 1
+**Planned at:** 2026-01-01
+
+## Evidence
+
+Нет
+
+## Review status
+
+**Latest verdict:** NOT REVIEWED
+**Latest report:** —
+
+## Blocker / Failure reason
+
+—`;
 
 describe('CodeLensRefreshController', () => {
   it('публикует ровно одну инвалидацию после замены index и не публикует при ошибке', async () => {
@@ -108,5 +211,142 @@ describe('CodeLensRefreshController', () => {
     expect(listener).not.toHaveBeenCalled();
     controller.dispose();
     jest.useRealTimers();
+  });
+});
+
+describe('ValidationController', () => {
+  it('объединяет частые изменения и проверяет только последний текст', async () => {
+    jest.useFakeTimers();
+    const validate = jest.fn();
+    const controller = new ValidationController(validate, 120);
+
+    controller.schedule('A');
+    controller.schedule('B');
+    await jest.advanceTimersByTimeAsync(120);
+
+    expect(validate).toHaveBeenCalledTimes(1);
+    expect(validate.mock.calls[0][0]).toBe('B');
+    controller.dispose();
+    jest.useRealTimers();
+  });
+
+  it('не публикует pending validation после dispose', async () => {
+    jest.useFakeTimers();
+    const validate = jest.fn();
+    const controller = new ValidationController(validate, 120);
+
+    controller.schedule('текст');
+    controller.dispose();
+    await jest.advanceTimersByTimeAsync(120);
+
+    expect(validate).not.toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  it('отменяет pending validation до закрытия документа', async () => {
+    jest.useFakeTimers();
+    const validate = jest.fn();
+    const controller = new ValidationController(validate, 120);
+
+    controller.schedule('текст');
+    controller.cancel();
+    await jest.advanceTimersByTimeAsync(120);
+
+    expect(validate).not.toHaveBeenCalled();
+    controller.dispose();
+    jest.useRealTimers();
+  });
+
+  it('делает generation guard неактуальным после нового изменения', async () => {
+    jest.useFakeTimers();
+    let isCurrent: (() => boolean) | undefined;
+    const controller = new ValidationController((_text, guard) => { isCurrent = guard; }, 120);
+
+    controller.schedule('A');
+    await jest.advanceTimersByTimeAsync(120);
+    expect(isCurrent?.()).toBe(true);
+    controller.schedule('B');
+    expect(isCurrent?.()).toBe(false);
+    controller.dispose();
+    jest.useRealTimers();
+  });
+});
+
+describe('editor validation event wiring', () => {
+  it('debounce-путь change event публикует только последний текст, не смешивает документы и отменяется при close', async () => {
+    jest.useFakeTimers();
+    const diagnostics = { set: jest.fn(), delete: jest.fn() } as unknown as vscode.DiagnosticCollection;
+    const scheduler = new DocumentValidationScheduler<{ uri: { toString(): string }; text: string }>((document, isCurrent) => {
+      if (isCurrent()) diagnostics.set(document.uri as unknown as vscode.Uri, [document.text] as unknown as vscode.Diagnostic[]);
+    });
+    const context = { subscriptions: [] as vscode.Disposable[] } as unknown as vscode.ExtensionContext;
+    const workspace = vscode.workspace as unknown as {
+      onDidChangeTextDocument: jest.Mock;
+      onDidCloseTextDocument: jest.Mock;
+      onDidOpenTextDocument: jest.Mock;
+    };
+    workspace.onDidOpenTextDocument.mockClear();
+    workspace.onDidChangeTextDocument.mockClear();
+    workspace.onDidCloseTextDocument.mockClear();
+    registerValidationListeners(context, scheduler as unknown as DocumentValidationScheduler<vscode.TextDocument>, diagnostics, jest.fn());
+
+    const change = workspace.onDidChangeTextDocument.mock.calls[0][0] as (event: { document: unknown }) => void;
+    const close = workspace.onDidCloseTextDocument.mock.calls[0][0] as (document: unknown) => void;
+    const first = { uri: { toString: () => 'file:///A.md' }, text: 'A-устаревший' };
+    const latest = { uri: { toString: () => 'file:///A.md' }, text: 'A-последний' };
+    const independent = { uri: { toString: () => 'file:///B.md' }, text: 'B-независимый' };
+
+    change({ document: first });
+    change({ document: latest });
+    change({ document: independent });
+    await jest.advanceTimersByTimeAsync(120);
+    expect((diagnostics.set as jest.Mock).mock.calls).toEqual(expect.arrayContaining([
+      [latest.uri, ['A-последний']],
+      [independent.uri, ['B-независимый']],
+    ]));
+    expect(diagnostics.set).toHaveBeenCalledTimes(2);
+
+    change({ document: { uri: latest.uri, text: 'A-после-close' } });
+    close(latest);
+    await jest.advanceTimersByTimeAsync(120);
+    expect(diagnostics.set).toHaveBeenCalledTimes(2);
+    expect(diagnostics.delete).toHaveBeenCalledWith(latest.uri);
+    scheduler.dispose();
+    jest.useRealTimers();
+  });
+});
+
+describe('editor language compatibility', () => {
+  it('оставляет runtime selector language-only, а index читает custom manifest taskDirectory', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-editor-'));
+    try {
+      await fs.mkdir(path.join(root, 'custom', 'steps'), { recursive: true });
+      await fs.writeFile(path.join(root, 'custom', 'steps', 'STEP-101.md'), minimalStep, 'utf8');
+      const index = await loadIndex(root, editorManifest);
+
+      expect(stepEditorSelector).toEqual({ language: 'harness-step' });
+      expect(index.steps.get('STEP-101')?.content).toBe(minimalStep);
+      expect(stepEditorWatchPatterns(editorManifest)).toContain('custom/steps/STEP-*.md');
+      expect(stepEditorWatchPatterns(editorManifest)).not.toContain('planning/tasks/STEP-*.md');
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('задаёт парный HTML block comment и композирует стандартный Markdown scope', async () => {
+    const root = path.resolve(__dirname, '../../..');
+    const [configuration, grammar, manifest] = await Promise.all([
+      fs.readFile(path.join(root, 'language-configuration.json'), 'utf8'),
+      fs.readFile(path.join(root, 'syntaxes', 'harness-step.tmLanguage.json'), 'utf8'),
+      fs.readFile(path.join(root, 'package.json'), 'utf8'),
+    ]);
+    const languageConfiguration = JSON.parse(configuration) as { comments: Record<string, unknown> };
+    const grammarConfiguration = JSON.parse(grammar) as { patterns: Array<Record<string, string>> };
+    const packageConfiguration = JSON.parse(manifest) as { contributes: { languages: Array<{ id: string; filenamePatterns: string[] }> } };
+
+    expect(languageConfiguration.comments).toEqual({ blockComment: ['<!--', '-->'] });
+    expect(grammarConfiguration.patterns.at(-1)).toEqual({ include: 'text.html.markdown' });
+    expect(grammarConfiguration.patterns.slice(0, -1)).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'keyword.control.harness-step' })]));
+    expect(packageConfiguration.contributes.languages.find((language) => language.id === 'harness-step')?.filenamePatterns).toEqual(['**/planning/tasks/STEP-*.md']);
   });
 });

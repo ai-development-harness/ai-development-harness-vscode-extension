@@ -4,7 +4,7 @@
 
 ## Summary
 
-Проект инициализирован (`INIT PROJECT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette с 11 MVP-командами + pre-dispatch валидацией (`STEP-005`), Sidebar Explorer (`STEP-006`), STEP File Editor (`STEP-007`), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 выполнены. Status Bar остаётся в будущем STEP-008.
+Проект инициализирован (`INIT PROJECT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015/STEP-021 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette с 11 MVP-командами + pre-dispatch валидацией (`STEP-005`), Sidebar Explorer (`STEP-006`), Smart STEP Editor (`STEP-007`, corrective `STEP-021`), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 выполнены. Status Bar остаётся в будущем STEP-008.
 
 ## In progress
 
@@ -20,6 +20,13 @@
 
 ## Recent completed
 
+- `STEP-021` — corrective BUGFIX Smart STEP Editor: устранены diagnostics
+  циклов в несохранённом документе, stale validation и некорректная Markdown
+  comment configuration; runtime watcher следует manifest-resolved
+  `taskDirectory`, а grammar композиционно сохраняет Markdown. PASS
+  (`planning/reviews/STEP-021/REVIEW-2026-09-20T0755Z.md`) подтвердил
+  исправления и полный verification gate.
+
 - `STEP-007` — STEP File Editor: custom language, advisory diagnostics,
   CodeLens/Definition/Hover, autocomplete и guarded quick actions. Единый
   manifest-resolved index следует за внешними create/change/delete; generation
@@ -27,6 +34,8 @@
   Independent review — PASS
   (`planning/reviews/STEP-007/REVIEW-2026-09-20T0708Z.md`); проверки: compile,
   lint, build, 309 unit tests, 27 Extension Host tests и Harness validation.
+  Последующий independent review обнаружил production gaps; их устранил
+  corrective STEP-021 с PASS review.
 
 - `STEP-009` — manual-only handoff для agent-requiring команд: CTS и Mutation
   policy pre-validation выполняются до handoff, text-command получает

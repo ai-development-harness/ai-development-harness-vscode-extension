@@ -59,7 +59,16 @@ export function validateStepDocument(content: string, index: StepEditorIndex, t:
       );
     }
   }
-  if (hasCycle(data.id, index.steps, new Set(), new Set())) {
+  // Текст открытого документа может ещё не попасть на диск. Локальная проекция
+  // подменяет только его запись для обхода графа и не меняет shared index providers.
+  const stepsForCycle = new Map(index.steps);
+  stepsForCycle.set(data.id, {
+    title: data.title,
+    status: data.status,
+    content,
+    uri: index.steps.get(data.id)?.uri,
+  });
+  if (hasCycle(data.id, stepsForCycle, new Set(), new Set())) {
     diagnostics.push(diagnostic(content, 0, t('harness.editor.diagnostic.dependencyCycle'), 'error'));
   }
   const forbidden = new Set(data.outOfScope.map(normalize));

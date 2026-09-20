@@ -145,6 +145,9 @@ export const workspace = {
   workspaceFolders: undefined as unknown,
   textDocuments: [] as unknown[],
   applyEdit: jest.fn(async () => true),
+  onDidOpenTextDocument: jest.fn(),
+  onDidChangeTextDocument: jest.fn(),
+  onDidCloseTextDocument: jest.fn(),
 };
 
 export const window = {

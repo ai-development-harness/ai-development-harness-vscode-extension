@@ -12,7 +12,105 @@ import { createDefinitionProvider } from './definitionProvider';
 import { provideHover } from './hoverProvider';
 import { createEditorIndex, StepEditorIndex, validateStepDocument } from './validation';
 
-const selector: vscode.DocumentSelector = { language: 'harness-step', pattern: '**/planning/tasks/STEP-*.md' };
+// Runtime providers не знают layout: manifest-resolved index уже определяет artifacts.
+// Static filename pattern остаётся только declarative ограничением VS Code contribution API.
+export const stepEditorSelector: vscode.DocumentSelector = { language: 'harness-step' };
+
+/**
+ * Объединяет частые editor events в одну проверку последнего документа.
+ * Generation guard оставляет late callback inert после более нового изменения или dispose.
+ */
+export class ValidationController<T> implements vscode.Disposable {
+  private timer: NodeJS.Timeout | undefined;
+  private disposed = false;
+  private generation = 0;
+
+  constructor(
+    private readonly validate: (value: T, isCurrent: () => boolean) => void,
+    private readonly delayMs = 120,
+  ) {}
+
+  schedule(value: T): void {
+    if (this.disposed) return;
+    const generation = ++this.generation;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      this.timer = undefined;
+      if (!this.disposed && generation === this.generation) {
+        this.validate(value, () => !this.disposed && generation === this.generation);
+      }
+    }, this.delayMs);
+  }
+
+  cancel(): void {
+    ++this.generation;
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+  }
+
+  dispose(): void {
+    this.disposed = true;
+    this.cancel();
+  }
+}
+
+/**
+ * Связывает debounce с жизненным циклом конкретного документа, не смешивая
+ * pending validation разных открытых STEP. Отдельный seam позволяет проверить
+ * именно путь editor event -> publication, а не только timer controller.
+ */
+export class DocumentValidationScheduler<T extends { uri: { toString(): string } }> implements vscode.Disposable {
+  private readonly controllers = new Map<string, ValidationController<T>>();
+
+  constructor(private readonly validate: (document: T, isCurrent: () => boolean) => void) {}
+
+  schedule(document: T): void {
+    const key = document.uri.toString();
+    let controller = this.controllers.get(key);
+    if (!controller) {
+      controller = new ValidationController(this.validate);
+      this.controllers.set(key, controller);
+    }
+    controller.schedule(document);
+  }
+
+  close(document: T): void {
+    const key = document.uri.toString();
+    this.controllers.get(key)?.dispose();
+    this.controllers.delete(key);
+  }
+
+  dispose(): void {
+    this.controllers.forEach((controller) => controller.dispose());
+    this.controllers.clear();
+  }
+}
+
+/** Реальный event boundary validation: change debounce, close отменяет pending publication. */
+export function registerValidationListeners(
+  context: vscode.ExtensionContext,
+  scheduler: DocumentValidationScheduler<vscode.TextDocument>,
+  diagnostics: vscode.DiagnosticCollection,
+  validateNow: (document: vscode.TextDocument) => void,
+): void {
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenTextDocument(validateNow),
+    vscode.workspace.onDidChangeTextDocument((event) => scheduler.schedule(event.document)),
+    vscode.workspace.onDidCloseTextDocument((document) => {
+      scheduler.close(document);
+      diagnostics.delete(document.uri);
+    }),
+    scheduler,
+  );
+}
+
+/** Все filesystem watchers получают STEP glob только из manifest, включая custom layout. */
+export function stepEditorWatchPatterns(manifest: ManifestData): string[] {
+  const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
+  return [manifest.sources.requirements, `${manifest.protocol.taskDirectory}/STEP-*.md`, '.project/manifest.yaml', ...(adrDirectory ? [`${adrDirectory}/ADR-*.md`] : [])];
+}
 
 /**
  * Отделяет debounce watcher от CodeLens cache invalidation.
@@ -76,13 +174,19 @@ export async function registerStepEditor(context: vscode.ExtensionContext): Prom
   // VSCode caches CodeLens for open editors. An external artifact change only
   // refreshes our index, so the provider must explicitly invalidate that cache.
   context.subscriptions.push(diagnostics);
-  const validate = (document: vscode.TextDocument): void => {
+  const validate = (document: vscode.TextDocument, isCurrent: () => boolean = () => true): void => {
     if (document.languageId !== 'harness-step') return;
-    diagnostics.set(document.uri, validateStepDocument(document.getText(), index, i18n.t).map((item) => {
+    const content = document.getText();
+    const nextDiagnostics = validateStepDocument(content, index, i18n.t).map((item) => {
       const start = document.positionAt(item.offset);
       return new vscode.Diagnostic(new vscode.Range(start, document.positionAt(item.offset + item.length)), item.message, item.severity === 'error' ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning);
-    }));
+    });
+    // Validation синхронна, но guard сохраняет latest-only contract при re-entrant event.
+    if (isCurrent()) diagnostics.set(document.uri, nextDiagnostics);
   };
+  // Каждый открытый STEP получает свой debounce: изменение A не должно отменять
+  // ожидающую диагностику независимого документа B.
+  const validations = new DocumentValidationScheduler(validate);
   let sourceWatchers: vscode.Disposable[] = [];
   const disposeSourceWatchers = (): void => { sourceWatchers.forEach((watcher) => watcher.dispose()); sourceWatchers = []; };
   const codeLensRefresh = new CodeLensRefreshController(
@@ -95,15 +199,13 @@ export async function registerStepEditor(context: vscode.ExtensionContext): Prom
       manifest = next.manifest;
       index = next.index;
       if (manifestChanged) rewatch();
-      vscode.workspace.textDocuments.forEach(validate);
+      vscode.workspace.textDocuments.forEach((document) => validate(document));
     },
   );
   const refresh = (): void => codeLensRefresh.schedule();
   const rewatch = (): void => {
     disposeSourceWatchers();
-    const adrDirectory = resolveHarnessArtifactPath(manifest, 'adrDirectory');
-    const patterns = [manifest.sources.requirements, `${manifest.protocol.taskDirectory}/STEP-*.md`, '.project/manifest.yaml', ...(adrDirectory ? [`${adrDirectory}/ADR-*.md`] : [])];
-    for (const pattern of patterns) {
+    for (const pattern of stepEditorWatchPatterns(manifest)) {
       const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, pattern));
       watcher.onDidCreate(refresh);
       watcher.onDidChange(refresh);
@@ -113,17 +215,17 @@ export async function registerStepEditor(context: vscode.ExtensionContext): Prom
   };
   rewatch();
   context.subscriptions.push(codeLensRefresh, { dispose: disposeSourceWatchers });
-  context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(validate), vscode.workspace.onDidChangeTextDocument((event) => validate(event.document)), vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri)));
-  vscode.workspace.textDocuments.forEach(validate);
+  registerValidationListeners(context, validations, diagnostics, validate);
+  vscode.workspace.textDocuments.forEach((document) => validate(document));
   context.subscriptions.push(
-    vscode.languages.registerCodeLensProvider(selector, {
+    vscode.languages.registerCodeLensProvider(stepEditorSelector, {
       onDidChangeCodeLenses: codeLensRefresh.onDidChangeCodeLenses,
       provideCodeLenses: (document) => createCodeLenses(document, index, i18n.t),
     }),
-    vscode.languages.registerDefinitionProvider(selector, createDefinitionProvider(() => index)),
-    vscode.languages.registerHoverProvider(selector, { provideHover: (document, position) => provideHover(document, position, index, i18n.t) }),
-    vscode.languages.registerCompletionItemProvider(selector, { provideCompletionItems: (document, position) => provideCompletionItems(document, position, index) }, '-'),
-    vscode.languages.registerCodeActionsProvider(selector, { provideCodeActions: (document, range) => createCodeActions(document, range, i18n.t) }, { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }),
+    vscode.languages.registerDefinitionProvider(stepEditorSelector, createDefinitionProvider(() => index)),
+    vscode.languages.registerHoverProvider(stepEditorSelector, { provideHover: (document, position) => provideHover(document, position, index, i18n.t) }),
+    vscode.languages.registerCompletionItemProvider(stepEditorSelector, { provideCompletionItems: (document, position) => provideCompletionItems(document, position, index) }, '-'),
+    vscode.languages.registerCodeActionsProvider(stepEditorSelector, { provideCodeActions: (document, range) => createCodeActions(document, range, i18n.t) }, { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }),
     vscode.commands.registerCommand('harness.editor.openReference', (id: string) => openArtifact(index, id)),
     vscode.commands.registerCommand('harness.editor.openPlan', (id?: string) => openFile(vscode.Uri.file(path.join(root, manifest.sources.roadmap)), id))
   );

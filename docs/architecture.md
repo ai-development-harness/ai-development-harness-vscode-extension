@@ -66,3 +66,12 @@ Automatic executor потребует нового ADR, доказанной pla
 representation; STEP-009 ожидает свежий независимый review этого исправления.
 
 ADR-005 закрепляет Parser/path-resolution boundary единственным владельцем resolver/registry. Neutral surface `src/parser/artifactPaths.ts` уже реализует allowlisted derivations для `adrDirectory` и `requirementsStatus`; Explorer, watcher и actions получают из неё готовые пути. Для неизвестного поколения manifest resolver возвращает `undefined`: обычный Explorer локально деградирует, а destructive delete guard fail-closed блокирует удаление, пока не сможет проверить все источники входящих ссылок.
+
+`harness-step` language contribution содержит статический `filenamePatterns` для default layout, потому что VS Code читает contribution из `package.json` до доступа extension к workspace manifest и не поддерживает manifest-driven glob. Это compatibility constraint только назначения language ID. После назначения runtime editor providers используют language-only selector, а STEP index и watcher получают `protocol.taskDirectory` исключительно из manifest через Parser boundary; fallback-угадывание файловой topology запрещено ADR-005.
+
+Публичный Extension API VS Code 1.138 не раскрывает TextMate grammar registry или
+token scopes уже зарегистрированного Markdown языка; поэтому extension не
+использует internal API, новую test dependency или vendored grammar ради scope
+inspection. Совместимость грамматик доказывается composition `include` по
+стандартному TextMate contract и загрузкой `harness-step` в Extension Development
+Host; прямой assertion Markdown scopes требует отдельного поддерживаемого API.

@@ -98,6 +98,21 @@ describe('validateStepDocument', () => {
     expect(messages).toContain('harness.editor.diagnostic.dependencyCycle');
   });
 
+  it('видит цикл из несохранённого текущего STEP без мутации сохранённого index', () => {
+    const savedA = valid.replace('STEP-001', 'STEP-101');
+    const savedB = valid.replace('STEP-001', 'STEP-102').replace('**Depends on:** —', '**Depends on:** STEP-101');
+    const unsavedA = savedA.replace('**Depends on:** —', '**Depends on:** STEP-102');
+    const index = createEditorIndex({ steps: [{ content: savedA }, { content: savedB }], adrs: [] });
+    const original = index.steps.get('STEP-101');
+
+    const diagnostics = validateStepDocument(unsavedA, index, t);
+
+    expect(diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ message: expect.stringContaining('dependencyCycle') })]));
+    expect(index.steps.get('STEP-101')).toBe(original);
+    expect(index.steps.get('STEP-101')?.content).toBe(savedA);
+    expect(index.steps.get('STEP-102')?.content).toBe(savedB);
+  });
+
   it('привязывает diagnostic каждой невыполненной зависимости к её полному ID', () => {
     const target = valid.replace('**Depends on:** —', '**Depends on:** STEP-019, STEP-022');
     const step019 = valid.replace('STEP-001', 'STEP-019').replace('**Статус:** Выполнено', '**Статус:** В работе');
