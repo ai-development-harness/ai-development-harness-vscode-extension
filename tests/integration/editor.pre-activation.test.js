@@ -24,8 +24,16 @@ suite('STEP editor pre-activation (STEP-023)', () => {
       // Host гарантирует, что initial sweep выполняется при первой activation.
       assert.strictEqual(document.languageId, 'markdown');
       await ext.activate();
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      const assigned = vscode.workspace.textDocuments.find((candidate) => candidate.uri.fsPath === target) ?? document;
+      // Initial sweep читает manifest-resolved каталоги асинхронно, поэтому
+      // фиксированная пауза 400 ms в CI не гарантирует завершение назначения.
+      // Poll ожидает наблюдаемый результат в пределах общего бюджета.
+      const deadline = Date.now() + 5000;
+      let assigned;
+      do {
+        assigned = vscode.workspace.textDocuments.find((candidate) => candidate.uri.fsPath === target) ?? document;
+        if (assigned.languageId === 'harness-step') break;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      } while (Date.now() < deadline);
       assert.strictEqual(assigned.languageId, 'harness-step');
       assert.ok(vscode.languages.getDiagnostics(assigned.uri).some((item) => item.message.includes('REQ-999')));
     } finally {
