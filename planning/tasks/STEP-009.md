@@ -242,6 +242,30 @@ fake Codex/Claude не запускаются.
 
 ## Evidence
 
+### FIX — 2026-09-19 (F-001..F-004 manual-only boundary)
+
+- F-001: `src/api/commandPolicy.ts` читает input metadata из bundled CTS для
+  всех command family. Required input и optional input с text получают
+  локализованный non-executable descriptor; exact command остаётся только для
+  `input=none` и `GIT COMMIT` без text. Unit- и Extension Host regressions
+  подтверждают RU/EN sinks и отсутствие raw input в handoff.
+- F-002: effect policy исчерпывающе сопоставляет CTS operation с
+  `read-only`, `filesystem-write` или `remote-mutation`. Unknown operation и
+  STEP mutation без `Mutation policy → Allowed` fail-closed; `GIT PUSH`/`PR`
+  не классифицируются read-only.
+- F-003/F-004: удалены automatic executor/context/reload/Git snapshot modules
+  и их tests, executable configuration, cancel command/keybinding/context key
+  и `AbortController` path. Manual dispatcher остаётся единственным runtime
+  integration path по ADR-010.
+- Проверки: `npm run compile` — exit code 0; `npm run lint` — exit code 0;
+  `npm test -- --runInBand` — exit code 0, 23 suites/274 tests passed;
+  `npm run build` — exit code 0; `npm run test:integration` — exit code 0,
+  19 Extension Host scenarios passed после запуска с доступом к VS Code
+  runtime socket. Первый sandboxed запуск остановился до сценариев из-за
+  `EROFS` для `/run/user/1000`; это ограничение окружения, не test failure.
+  `git diff --check` и `python3 tools/harness/validate.py --mode commit` —
+  exit code 0.
+
 Историческое evidence ниже фиксирует последовательные FIX-проходы. Полнота
 acceptance criteria и Verification доказана итоговым независимым PASS review
 `planning/reviews/STEP-009/REVIEW-2026-09-19T2038Z.md`.
@@ -640,13 +664,54 @@ variables без secret values.
   `git diff --check` (0); `python3 tools/harness/validate.py --mode commit`
   (0; PASS).
 
+### FIX — 2026-09-20 (по FAIL review `REVIEW-2026-09-20T0403Z.md`, F-001..F-005)
+
+- `commandPolicy` теперь разбирает все CTS segments: safe descriptor включается,
+  когда free text есть в любом segment, а exact label собирается только из
+  normalized canonical tokens. Effect policy агрегирует strongest effect всех
+  segments и не принимает continuation alias первым segment.
+- Удалены неиспользуемые `workspacePaths` и `NotImplementedAgentDispatcher`:
+  они сохраняли contract automatic lifecycle вне manual-only scope ADR-010.
+  `baseCommand` зависит напрямую от общего API type contract.
+- Unit regressions покрывают chain с поздним free text, remote/filesystem
+  chain effects, standalone continuation alias и outer control-byte wrapper.
+  Extension Host regression помещает fake `codex`/`claude` в test-only `PATH`
+  и подтверждает отсутствие marker для valid и invalid manual handoff.
+- Проверки: focused `npm test -- --runInBand
+  tests/unit/api/commandPolicy.test.ts tests/unit/api/agentDispatcher.test.ts`
+  (0; 2 suites, 72 tests); `npm run compile` (0); `npm run lint` (0);
+  `npm test -- --runInBand` (0; 22 suites, 279 tests); `npm run build` (0);
+  `npm run test:integration` в sandbox (1; `EROFS` VS Code runtime socket),
+  повтор с local runtime access (0; 20 Extension Host scenarios);
+  `git diff --check` (0); `python3 tools/harness/validate.py --mode commit`
+  (0; `HARNESS VALIDATION: PASS`, 364 tracked files).
+
+### FIX — 2026-09-20 (по FAIL review `REVIEW-2026-09-20T0413Z.md`, F-001..F-003)
+
+- Release target проходит safe grammar до manual handoff; normalized exact label
+  сохраняет literal `TO` и не допускает control/format bytes. Unit regression
+  проверяет safe standalone и chain label в Output Channel/UI params, а hostile
+  target получает localized pre-validation blocker без manual handoff.
+- `commandPolicy` и dispatcher получили table-driven regression для отсутствующего
+  CTS edge, смены domain и смены STEP target. Все три path fail-closed до
+  manual handoff, без executor lifecycle.
+- Architecture baseline больше не заявляет отсутствующую containment-защиту
+  artifact paths. Traversal/symlink boundary раскрыта как отдельный security
+  debt вне scope STEP-009, без скрытого production expansion.
+- Проверки: focused `npm test -- --runInBand
+  tests/unit/api/commandPolicy.test.ts tests/unit/api/agentDispatcher.test.ts`
+  (0; 2 suites, 87 tests); `npm run compile` (0); `npm run lint` (0); `npm
+  test -- --runInBand` (0; 22 suites, 294 tests); `npm run build` (0); `npm
+  run test:integration` в sandbox (1; `EROFS` VS Code runtime socket), повтор
+  с local runtime access (0; 20 Extension Host scenarios); `git diff --check`
+  (0); `python3 tools/harness/validate.py --mode commit` (0; `HARNESS
+  VALIDATION: PASS`, 362 tracked files).
+
 ## Review status
 
 **Latest verdict:** PASS
-**Latest report:** `planning/reviews/STEP-009/REVIEW-2026-09-19T2038Z.md`
+**Latest report:** `planning/reviews/STEP-009/REVIEW-2026-09-20T0422Z.md`
 
 ## Blocker / Failure reason
 
-Нет. `REVIEW-2026-09-19T2038Z.md` подтвердил закрытие последнего finding:
-valid text path и exact non-text path требуют пустой `showErrorMessage` sink.
-Все предыдущие findings закрыты, полный набор deterministic gates прошёл.
+—

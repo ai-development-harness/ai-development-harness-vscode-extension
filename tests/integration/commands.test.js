@@ -61,38 +61,10 @@ suite('Harness commands (STEP-005)', () => {
     await vscode.commands.executeCommand('harness.status');
   });
 
-  test('write-команда не запускает fake executor и cancel остаётся безопасным', async () => {
-    const binDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-extension-cancel-'));
-    const marker = path.join(binDirectory, 'started');
-    const executable = path.join(binDirectory, 'codex');
-    await fs.writeFile(executable, `#!/bin/sh\nprintf '%s' started > "${marker}"\n`);
-    await fs.chmod(executable, 0o755);
-    await vscode.workspace.getConfiguration('harness').update('executables.codex', executable, true);
-    const previousPath = process.env.PATH;
-    process.env.PATH = `${binDirectory}${path.delimiter}${previousPath}`;
-    try {
-      await vscode.commands.executeCommand('harness.plan', 'STEP-1');
-      await vscode.commands.executeCommand('harness.cancelAgent');
-      await assert.rejects(fs.access(marker), /ENOENT/, 'ADR-008 не допускает spawn write executor');
-    } finally {
-      await vscode.workspace.getConfiguration('harness').update('executables.codex', '', true);
-      process.env.PATH = previousPath;
-      await fs.rm(binDirectory, { recursive: true, force: true });
-    }
-  });
-
-  test('RU/EN FIX STEP показывает exact canonical command и полный localized handoff в обоих sink без context/spawn/reload fake Codex', async () => {
-    const binDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-extension-cli-'));
-    const promptFile = path.join(binDirectory, 'prompt.txt');
-    const executable = path.join(binDirectory, 'codex');
+  test('RU/EN FIX STEP показывает exact canonical command и полный localized handoff в обоих sink', async () => {
     const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
     const stepPath = path.join(workspaceRoot, 'planning', 'tasks', 'STEP-009.md');
     const fixture = await fs.readFile(path.join(workspaceRoot, 'planning', 'tasks', 'STEP-1.md'), 'utf8');
-    await fs.writeFile(executable, `#!/bin/sh\ncat > "${promptFile}"\n`);
-    await fs.chmod(executable, 0o755);
-    await vscode.workspace.getConfiguration('harness').update('executables.codex', executable, true);
-    const previousPath = process.env.PATH;
-    process.env.PATH = `${binDirectory}${path.delimiter}${previousPath}`;
     try {
       // Реальный Command Palette path требует CTS-valid FIX target; общий
       // fixture содержит только terminal STEP-1, поэтому создаём его локально.
@@ -116,56 +88,19 @@ suite('Harness commands (STEP-005)', () => {
         assert.deepStrictEqual(warnings, [manualFallback], `${language}: exact localized notification`);
         assert.deepStrictEqual(errors, [], `${language}: exact command must not show an error notification`);
       }
-      await assert.rejects(fs.access(promptFile), /ENOENT/, 'manual fallback не передаёт prompt процессу');
     } finally {
       await vscode.commands.executeCommand('harness.changeLanguage', 'ru');
-      await vscode.workspace.getConfiguration('harness').update('executables.codex', '', true);
-      process.env.PATH = previousPath;
       await fs.rm(stepPath, { force: true });
-      await fs.rm(binDirectory, { recursive: true, force: true });
     }
   });
 
-  test('write-команда не запускает secondary Claude executor', async () => {
-    const binDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-extension-claude-'));
-    const marker = path.join(binDirectory, 'claude-ran');
-    const executable = path.join(binDirectory, 'claude');
-    await fs.writeFile(executable, `#!/bin/sh\nprintf '%s' fallback > "${marker}"\n`);
-    await fs.chmod(executable, 0o755);
-    await vscode.workspace.getConfiguration('harness').update('executables.claude', executable, true);
-    // Context builder также читает git status; symlink резолвится вне fixture и
-    // сохраняет тест изолированным от реального PATH Extension Host.
-    await fs.symlink('/usr/bin/git', path.join(binDirectory, 'git'));
-    const previousPath = process.env.PATH;
-    process.env.PATH = binDirectory;
-    try {
-      await vscode.commands.executeCommand('harness.plan', 'STEP-1');
-      await assert.rejects(fs.access(marker), /ENOENT/, 'ADR-008 блокирует fallback CLI до spawn');
-    } finally {
-      await vscode.workspace.getConfiguration('harness').update('executables.claude', '', true);
-      process.env.PATH = previousPath;
-      await fs.rm(binDirectory, { recursive: true, force: true });
-    }
-  });
-
-  test('RU/EN descriptor обеих text-команд не раскрывает pure-normal или hostile input в Output Channel/UI и не запускает CLI', async () => {
-    const binDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-extension-hostile-text-'));
-    const codexMarker = path.join(binDirectory, 'codex-spawned');
-    const claudeMarker = path.join(binDirectory, 'claude-spawned');
-    const codex = path.join(binDirectory, 'codex');
-    const claude = path.join(binDirectory, 'claude');
+  test('RU/EN descriptor обеих text-команд не раскрывает pure-normal или hostile input в Output Channel/UI', async () => {
     const secret = 'real-secret-value';
     // Pure-normal marker доказывает never-echo boundary отдельно от redaction
     // secret/control payload, который проверяется второй fixture ниже.
     const ordinaryIntent = 'ordinary-intent-sentinel';
     const normalIntent = `add public roadmap card ${ordinaryIntent}`;
     const hostileIntent = `${ordinaryIntent} to\rken=${secret}\n\x1b[31mxoxb-1234567890-secret\u2028\u202e`;
-    await fs.writeFile(codex, `#!/bin/sh\nprintf codex > "${codexMarker}"\n`);
-    await fs.writeFile(claude, `#!/bin/sh\nprintf claude > "${claudeMarker}"\n`);
-    await fs.chmod(codex, 0o755);
-    await fs.chmod(claude, 0o755);
-    await vscode.workspace.getConfiguration('harness').update('executables.codex', codex, true);
-    await vscode.workspace.getConfiguration('harness').update('executables.claude', claude, true);
     try {
       for (const [command, descriptorPrefix] of [
         ['harness.addStep', 'STEP ADD'],
@@ -192,28 +127,12 @@ suite('Harness commands (STEP-005)', () => {
           }
         }
       }
-      await assert.rejects(fs.access(codexMarker), /ENOENT/, 'manual handoff не должен запускать fake Codex');
-      await assert.rejects(fs.access(claudeMarker), /ENOENT/, 'manual handoff не должен запускать fake Claude');
     } finally {
       await vscode.commands.executeCommand('harness.changeLanguage', 'ru');
-      await vscode.workspace.getConfiguration('harness').update('executables.codex', '', true);
-      await vscode.workspace.getConfiguration('harness').update('executables.claude', '', true);
-      await fs.rm(binDirectory, { recursive: true, force: true });
     }
   });
 
-  test('RU/EN invalid text input показывает точный blocker без handoff и запуска CLI', async () => {
-    const binDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-extension-invalid-text-'));
-    const codexMarker = path.join(binDirectory, 'codex-spawned');
-    const claudeMarker = path.join(binDirectory, 'claude-spawned');
-    const codex = path.join(binDirectory, 'codex');
-    const claude = path.join(binDirectory, 'claude');
-    await fs.writeFile(codex, `#!/bin/sh\nprintf codex > "${codexMarker}"\n`);
-    await fs.writeFile(claude, `#!/bin/sh\nprintf claude > "${claudeMarker}"\n`);
-    await fs.chmod(codex, 0o755);
-    await fs.chmod(claude, 0o755);
-    await vscode.workspace.getConfiguration('harness').update('executables.codex', codex, true);
-    await vscode.workspace.getConfiguration('harness').update('executables.claude', claude, true);
+  test('RU/EN invalid text input показывает точный blocker без handoff', async () => {
     try {
       for (const command of ['harness.addStep', 'harness.quickFix']) {
         for (const [language, blocker] of [
@@ -235,13 +154,35 @@ suite('Harness commands (STEP-005)', () => {
           assert.deepStrictEqual(warnings, [], `${command}/${language}: invalid input must not show handoff notification`);
         }
       }
-      await assert.rejects(fs.access(codexMarker), /ENOENT/, 'invalid input не должен запускать fake Codex');
-      await assert.rejects(fs.access(claudeMarker), /ENOENT/, 'invalid input не должен запускать fake Claude');
     } finally {
       await vscode.commands.executeCommand('harness.changeLanguage', 'ru');
-      await vscode.workspace.getConfiguration('harness').update('executables.codex', '', true);
-      await vscode.workspace.getConfiguration('harness').update('executables.claude', '', true);
-      await fs.rm(binDirectory, { recursive: true, force: true });
+    }
+  });
+
+  test('manual handoff не запускает fake Codex или Claude для valid и invalid path', async () => {
+    const fakeBin = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-no-spawn-'));
+    const marker = path.join(fakeBin, 'spawned');
+    const previousPath = process.env.PATH;
+    const previousMarker = process.env.HARNESS_TEST_SPAWN_MARKER;
+    // Файлы намеренно доступны только через test-only PATH: marker появился бы
+    // при любом возврате к automatic executor, но manual MVP не запускает CLI.
+    const fakeCli = '#!/bin/sh\nprintf invoked > "$HARNESS_TEST_SPAWN_MARKER"\n';
+    try {
+      await Promise.all(['codex', 'claude'].map(async (name) => {
+        const executable = path.join(fakeBin, name);
+        await fs.writeFile(executable, fakeCli, { mode: 0o755 });
+      }));
+      process.env.PATH = `${fakeBin}${path.delimiter}${previousPath ?? ''}`;
+      process.env.HARNESS_TEST_SPAWN_MARKER = marker;
+      await vscode.commands.executeCommand('harness.addStep', 'ordinary-intent-sentinel');
+      await vscode.commands.executeCommand('harness.addStep', '\u001b\u2028\u202e');
+      await assert.rejects(fs.access(marker), { code: 'ENOENT' });
+    } finally {
+      if (previousPath === undefined) delete process.env.PATH;
+      else process.env.PATH = previousPath;
+      if (previousMarker === undefined) delete process.env.HARNESS_TEST_SPAWN_MARKER;
+      else process.env.HARNESS_TEST_SPAWN_MARKER = previousMarker;
+      await fs.rm(fakeBin, { recursive: true, force: true });
     }
   });
 

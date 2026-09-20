@@ -15,7 +15,6 @@ VSCode extension, работающий над git-репозиторием, ст
 - **Editor providers** (`src/editor/`) — diagnostics, code lens, hover, autocomplete для STEP/REQ/ADR-файлов.
 - **Status bar** (`src/ui/statusBar.ts`) — агрегированное состояние поверх Parser layer, с батчингом.
 - **i18n service** (`src/locales/`) — независим от остальных компонентов, используется всеми UI-слоями.
-- **Git helper** (`src/git/`) — read-only обёртка над `git` через argv для снимка branch и staged/unstaged/untracked изменений в контексте команды.
 
 ## Data / state model
 
@@ -32,13 +31,12 @@ ADR, supported platform matrix и доказанного OS-level containment.
 ## External dependencies / integrations
 
 - VSCode Extension API (v1.85+).
-- Локальный `git` CLI — read-only snapshot для контекста команд.
 - Пользовательский agent CLI: Codex или Claude Code может быть запущен только пользователем вне Extension Host. Historical headless transport ADR-004 не является текущей интеграцией.
 - Extension не использует внешние сетевые сервисы и не создаёт agent process.
 
 ## Security boundaries
 
-Плагин читает/пишет только файлы внутри workspace, попадающие под explicit manifest paths или зарегистрированные derived paths ADR-005, либо под собственный фиксированный путь настроек `.project/harness-config.json` (STEP-004: extension-owned settings, не источник protocol topology). Перед чтением agent context выполняются lexical containment и `realpath`-проверка, поэтому traversal и symlink наружу отклоняются. Derivation использует только константный suffix и manifest anchor; произвольный filesystem probing запрещён. Плагин не выполняет shell: git и agent CLI разрешаются в trusted absolute executable вне workspace и запускаются фиксированным argv. В MVP Extension Host не запускает agent CLI автоматически: ADR-010 требует manual handoff, а ADR-007/ADR-008 сохраняют правило, что context bundle, `cwd` и consent не являются filesystem sandbox или containment. Не отправляет телеметрию и не обращается к внешним сервисам через agent process.
+Плагин использует explicit manifest paths или зарегистрированные derived paths ADR-005, а также собственный фиксированный путь настроек `.project/harness-config.json` (STEP-004: extension-owned settings, не источник protocol topology). Derivation использует только константный suffix и manifest anchor; произвольный filesystem probing запрещён. Текущий Parser/filesystem boundary ещё не проверяет lexical containment или `realpath`: manifest с traversal либо symlink может вывести artifact-read path за пределы workspace. Это известный security debt вне scope STEP-009 и требует отдельного corrective STEP; данный baseline не выдаёт его за реализованную защиту. Extension Host не запускает shell, `git` или agent CLI. В MVP ADR-010 требует manual handoff: original free text не передаётся во внутренние UI surfaces по ADR-011, а пользователь самостоятельно запускает и авторизует CLI в контролируемом terminal. Плагин не отправляет телеметрию и не обращается к внешним сервисам через agent process.
 
 ## Reliability / observability
 
@@ -57,14 +55,14 @@ VSCode 1.85+, Electron only, Node.js runtime, бандлится через esbu
 
 ## Известный architecture debt / drift
 
-`STEP FIX STEP-009` реализовал ADR-008: current mutating commands переходят в
-manual fallback до executor resolution/spawn; Git pre-consent hardened, а
-external output sanitised. ADR-010 распространил это честное MVP-правило на
-весь automatic agent lifecycle: extension не spawn'ит current CLI. Environment
-boundary приведена к ADR-009: credential/provider/proxy/certificate variables
-не передаются, а пользователь самостоятельно авторизует CLI в terminal.
+`STEP FIX STEP-009` реализовал manual handoff по ADR-010: Extension Host не
+содержит executor и не spawn'ит CLI. Перед handoff CTS input и effect policy
+проверяются fail-closed, а представление free text определяется ADR-011, без
+передачи original input в extension-owned UI surfaces. Пользователь
+самостоятельно авторизует CLI в terminal, поэтому extension не владеет его
+environment или lifecycle.
 Automatic executor потребует нового ADR, доказанной platform boundary и
 отдельного implementation STEP. ADR-011 согласовал contract safe free-text
-representation; STEP-009 ждёт implementation этого документированного handoff.
+representation; STEP-009 ожидает свежий независимый review этого исправления.
 
 ADR-005 закрепляет Parser/path-resolution boundary единственным владельцем resolver/registry. Neutral surface `src/parser/artifactPaths.ts` уже реализует allowlisted derivations для `adrDirectory` и `requirementsStatus`; Explorer, watcher и actions получают из неё готовые пути. Для неизвестного поколения manifest resolver возвращает `undefined`: обычный Explorer локально деградирует, а destructive delete guard fail-closed блокирует удаление, пока не сможет проверить все источники входящих ссылок.

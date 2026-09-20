@@ -4,7 +4,7 @@
 
 ## Summary
 
-Проект инициализирован (`INIT PROJECT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette с 11 MVP-командами + pre-dispatch валидацией (`STEP-005`), Sidebar Explorer (`STEP-006`), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 выполнены. ADR-010 сузил REQ-005 до manual handoff, а ADR-011 согласовал safe representation free-text command; итоговый PASS review STEP-009 подтвердил этот runtime contract. Editor/status bar остаются в будущих STEP.
+Проект инициализирован (`INIT PROJECT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette с 11 MVP-командами + pre-dispatch валидацией (`STEP-005`), Sidebar Explorer (`STEP-006`), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 выполнены. Editor/status bar остаются в будущих STEP.
 
 ## In progress
 
@@ -23,12 +23,11 @@
 
 - `STEP-009` — manual-only handoff для agent-requiring команд: CTS и Mutation
   policy pre-validation выполняются до handoff, text-command получает
-  локализованный неисполняемый safe descriptor, а команда без free text
+  локализованный неисполняемый safe descriptor, а command без free text
   сохраняет exact canonical command. PASS
-  (`planning/reviews/STEP-009/REVIEW-2026-09-19T2038Z.md`) подтвердил RU/EN
-  coverage обеих text-command family, Output Channel, warning/error sinks,
-  normal/hostile/invalid input и no-spawn. REQ-005 выполнен; automatic
-  lifecycle остаётся вне MVP и требует нового ADR.
+  (`planning/reviews/STEP-009/REVIEW-2026-09-20T0422Z.md`) подтвердил safe
+  release target, RU/EN UI sinks, invalid-chain blocker и no-spawn boundary.
+  Automatic lifecycle остаётся вне MVP и требует нового ADR.
 
 - `STEP-020` — принят ADR-011 о безопасном представлении free-text команд в
   manual handoff MVP. Exact canonical command остаётся только для CTS

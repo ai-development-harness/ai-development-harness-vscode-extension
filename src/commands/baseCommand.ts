@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 import type { I18nService } from '../locales/activation';
 import { ManifestData, StepData } from '../parser/types';
 import type { InitGuard } from './preDispatch';
-import { AgentDispatcher, AgentInvocationContext } from './agentDispatcher';
-import { sanitizeExternalText } from '../api/executors';
+import type { AgentDispatcher, AgentInvocationContext } from '../api/types';
 
 /**
  * Общий контракт Command layer (REQ-001/ADR-003): все 11 MVP-команд реализуют
@@ -54,7 +53,6 @@ export async function dispatchViaAgent(ctx: DispatchContext, protocolName: strin
   const message = ctx.i18n.t(result.messageKey, result.params);
   if (result.ok) {
     void vscode.window.showInformationMessage(message);
-    if (result.nextCommand) void vscode.window.showInformationMessage(ctx.i18n.t('harness.agent.nextCommand', { command: sanitizeExternalText(result.nextCommand) }));
   } else {
     void vscode.window.showWarningMessage(message);
   }

@@ -11,7 +11,6 @@
   "harness.command.status.title": "Status project",
   "harness.command.quickFix.title": "Quick fix",
   "harness.command.reconcile.title": "Reconcile project",
-  "harness.command.cancelAgent.title": "Cancel agent execution",
   "harness.command.explorer.refresh.title": "Explorer: refresh",
   "harness.command.explorer.filterByStatus.title": "Explorer: filter by status",
   "harness.command.explorer.filterByType.title": "Explorer: filter by type",

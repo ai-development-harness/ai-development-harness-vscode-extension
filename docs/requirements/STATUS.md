@@ -8,7 +8,7 @@
 | REQ-002 | Sidebar Explorer артефактов проекта | Выполнено | STEP-006, STEP-015, STEP-016 | `planning/tasks/STEP-006.md`, PASS `planning/reviews/STEP-006/REVIEW-2026-09-18T1108.md`; PASS `planning/reviews/STEP-015/REVIEW-2026-09-19T1135Z.md`; ADR-005 подтверждён PASS `planning/reviews/STEP-016/REVIEW-2026-09-19T0951Z.md` |
 | REQ-003 | Smart-редактор STEP-файлов | Запланировано | STEP-007, STEP-016 | ADR-005 подтверждён PASS `planning/reviews/STEP-016/REVIEW-2026-09-19T0951Z.md`; STEP-007 использует общий resolver |
 | REQ-004 | Status Bar с состоянием проекта | Запланировано | STEP-008 | — |
-| REQ-005 | Manual handoff к agent CLI в MVP | Выполнено | STEP-001, STEP-009, STEP-017, STEP-018, STEP-019, STEP-020 | PASS `planning/reviews/STEP-009/REVIEW-2026-09-19T2038Z.md`: manual-only boundary, safe descriptor для text-command, RU/EN UI sinks, pre-validation blocker и no-spawn доказаны. Automatic lifecycle по-прежнему требует отдельного ADR и implementation STEP. |
+| REQ-005 | Manual handoff к agent CLI в MVP | Выполнено | STEP-001, STEP-009, STEP-017, STEP-018, STEP-019, STEP-020 | PASS `planning/reviews/STEP-009/REVIEW-2026-09-20T0422Z.md`: manual handoff покрывает exact command/safe descriptor, localized blocker и no-spawn boundary. Automatic lifecycle остаётся отдельной future capability и требует нового ADR и implementation STEP. |
 | REQ-006 | Локализация UI (RU/EN) | Частично | STEP-004, STEP-009, STEP-010, STEP-020 | PASS `planning/reviews/STEP-009/REVIEW-2026-09-19T2038Z.md` подтвердил RU/EN manual-handoff representation и blocker. Полная локализация остального UI остаётся в STEP-010. |
 | REQ-007 | Dependency graph visualization (Phase 2) | Отложено | — | — |
 | REQ-008 | Health Dashboard (Phase 2) | Отложено | — | — |

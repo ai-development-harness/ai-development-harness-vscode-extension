@@ -40,10 +40,7 @@ const ALL_COMMANDS: HarnessCommand[] = [
 const dispatcher = new HarnessAgentDispatcher();
 
 export function registerHarnessCommands(context: vscode.ExtensionContext): void {
-  context.subscriptions.push(
-    dispatcher,
-    vscode.commands.registerCommand('harness.cancelAgent', () => dispatcher.cancel())
-  );
+  context.subscriptions.push(dispatcher);
   for (const command of ALL_COMMANDS) {
     context.subscriptions.push(
       vscode.commands.registerCommand(command.id, (explicitArg?: string) => handleCommand(command, explicitArg))
