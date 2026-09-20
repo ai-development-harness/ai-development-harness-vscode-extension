@@ -4,7 +4,7 @@
 **Date:** 2026-09-17 (обновлено `FIX STEP-001` тем же числом — F-002/F-003 из `REVIEW-2026-09-17T1800.md`)
 **Deciders:** STEP-001 (research)
 **Supersedes:** —
-**Superseded by:** —
+**Superseded by:** ADR-010, Decision пункты 1–7 только для automatic invocation из Extension Host в MVP
 
 ## Context
 

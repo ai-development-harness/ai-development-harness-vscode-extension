@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { I18nService } from '../locales/activation';
 import { ManifestData, StepData } from '../parser/types';
 import type { InitGuard } from './preDispatch';
-import { AgentDispatcher, AgentInvocationContext } from './agentDispatcher';
+import type { AgentDispatcher, AgentInvocationContext } from '../api/types';
 
 /**
  * Общий контракт Command layer (REQ-001/ADR-003): все 11 MVP-команд реализуют
@@ -33,14 +33,20 @@ export interface HarnessCommand {
 
 /**
  * Общая реализация `dispatch()` для 9 из 11 команд, которым требуется
- * фактический вызов агента. `STATUS PROJECT`/`NEXT STEP` её не используют —
+ * фактический вызов агента. `PROJECT STATUS`/`STEP NEXT` её не используют —
  * их семантика полностью покрывается Parser layer (см. `status.ts`/`nextStep.ts`).
  */
 export async function dispatchViaAgent(ctx: DispatchContext, protocolName: string): Promise<void> {
+  const command = ctx.targetStep
+    ? protocolName.replace('STEP-NNN', ctx.targetStep.id)
+    : ctx.freeText !== undefined
+      ? `${protocolName}: ${ctx.freeText}`
+      : protocolName;
   const invocationCtx: AgentInvocationContext = {
-    protocolName,
+    protocolName: command,
     workspaceRoot: ctx.workspaceRoot,
-    stepId: ctx.targetStep?.id,
+    manifest: ctx.manifest,
+    targetStep: ctx.targetStep,
     freeText: ctx.freeText,
   };
   const result = await ctx.dispatcher.invoke(invocationCtx);

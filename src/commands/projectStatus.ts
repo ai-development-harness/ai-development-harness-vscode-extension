@@ -2,7 +2,7 @@ import type { I18nService } from '../locales/activation';
 import { StepData } from '../parser/types';
 
 /**
- * Чистая агрегация для `STATUS PROJECT` (§14 `EXECUTION_PROTOCOL.md`).
+ * Чистая агрегация для `PROJECT STATUS` (§14 `EXECUTION_PROTOCOL.md`).
  * `formatStatusSummary` принимает `I18nService` только как параметр (type-only
  * import — elided в компиляции), сам модуль не импортирует `vscode`.
  */
