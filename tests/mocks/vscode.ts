@@ -165,3 +165,7 @@ export const commands = {
   executeCommand: jest.fn(),
   registerCommand: jest.fn(() => ({ dispose: () => {} })),
 };
+
+export const languages = {
+  setTextDocumentLanguage: jest.fn(),
+};

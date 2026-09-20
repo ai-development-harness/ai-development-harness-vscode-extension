@@ -17,6 +17,64 @@ import { createEditorIndex, StepEditorIndex, validateStepDocument } from './vali
 export const stepEditorSelector: vscode.DocumentSelector = { language: 'harness-step' };
 
 /**
+ * Проверяет принадлежность документа ровно canonical taskDirectory из manifest.
+ * `path.relative` сохраняет границу каталога: sibling `tasks-old` не может
+ * пройти проверку как дочерний путь `tasks`.
+ */
+export function isCanonicalStepDocument(
+  document: Pick<vscode.TextDocument, 'uri'>,
+  workspaceRoot: string,
+  manifest: ManifestData,
+): boolean {
+  const taskDirectory = path.resolve(workspaceRoot, manifest.protocol.taskDirectory);
+  const documentPath = path.resolve(document.uri.fsPath);
+  const relative = path.relative(taskDirectory, documentPath);
+  const isDescendant = relative !== ''
+    && relative !== '..'
+    && !relative.startsWith(`..${path.sep}`)
+    && !path.isAbsolute(relative);
+
+  return isDescendant && /^STEP-.*\.md$/.test(path.basename(documentPath));
+}
+
+/**
+ * Назначает custom language только canonical STEP из текущего manifest.
+ * Pending-набор предотвращает дублирование до завершения API-вызова, а guard
+ * languageId безопасно переживает close/open lifecycle самого VS Code.
+ */
+export class StepLanguageAssociationController implements vscode.Disposable {
+  private disposed = false;
+  private readonly pending = new Set<string>();
+
+  constructor(
+    private readonly workspaceRoot: string,
+    private readonly getManifest: () => ManifestData,
+    private readonly setLanguage: (document: vscode.TextDocument, languageId: string) => Thenable<vscode.TextDocument> = vscode.languages.setTextDocumentLanguage,
+  ) {}
+
+  associate(document: vscode.TextDocument): void {
+    // Runtime association дополняет только Markdown: явный language mode пользователя
+    // не заменяется даже для canonical STEP. `harness-step` остаётся idempotent no-op.
+    if (this.disposed || document.languageId !== 'markdown' || !isCanonicalStepDocument(document, this.workspaceRoot, this.getManifest())) return;
+    const key = document.uri.toString();
+    if (this.pending.has(key)) return;
+
+    this.pending.add(key);
+    // API может бросить до возврата Thenable на lifecycle boundary. Начало цепочки
+    // до вызова гарантирует локальное поглощение ошибки и очистку pending.
+    void Promise.resolve().then(() => this.setLanguage(document, 'harness-step'))
+      // Ошибка назначения не должна останавливать index, watcher или providers.
+      .catch(() => undefined)
+      .finally(() => this.pending.delete(key));
+  }
+
+  dispose(): void {
+    this.disposed = true;
+    this.pending.clear();
+  }
+}
+
+/**
  * Объединяет частые editor events в одну проверку последнего документа.
  * Generation guard оставляет late callback inert после более нового изменения или dispose.
  */
@@ -187,6 +245,11 @@ export async function registerStepEditor(context: vscode.ExtensionContext): Prom
   // Каждый открытый STEP получает свой debounce: изменение A не должно отменять
   // ожидающую диагностику независимого документа B.
   const validations = new DocumentValidationScheduler(validate);
+  const languageAssociation = new StepLanguageAssociationController(root, () => manifest);
+  const handleDocument = (document: vscode.TextDocument): void => {
+    languageAssociation.associate(document);
+    validate(document);
+  };
   let sourceWatchers: vscode.Disposable[] = [];
   const disposeSourceWatchers = (): void => { sourceWatchers.forEach((watcher) => watcher.dispose()); sourceWatchers = []; };
   const codeLensRefresh = new CodeLensRefreshController(
@@ -199,7 +262,7 @@ export async function registerStepEditor(context: vscode.ExtensionContext): Prom
       manifest = next.manifest;
       index = next.index;
       if (manifestChanged) rewatch();
-      vscode.workspace.textDocuments.forEach((document) => validate(document));
+      vscode.workspace.textDocuments.forEach(handleDocument);
     },
   );
   const refresh = (): void => codeLensRefresh.schedule();
@@ -214,9 +277,9 @@ export async function registerStepEditor(context: vscode.ExtensionContext): Prom
     }
   };
   rewatch();
-  context.subscriptions.push(codeLensRefresh, { dispose: disposeSourceWatchers });
-  registerValidationListeners(context, validations, diagnostics, validate);
-  vscode.workspace.textDocuments.forEach((document) => validate(document));
+  context.subscriptions.push(codeLensRefresh, { dispose: disposeSourceWatchers }, languageAssociation);
+  registerValidationListeners(context, validations, diagnostics, handleDocument);
+  vscode.workspace.textDocuments.forEach(handleDocument);
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(stepEditorSelector, {
       onDidChangeCodeLenses: codeLensRefresh.onDidChangeCodeLenses,

@@ -5,8 +5,10 @@ import * as vscode from 'vscode';
 import {
   CodeLensRefreshController,
   DocumentValidationScheduler,
+  isCanonicalStepDocument,
   loadIndex,
   registerValidationListeners,
+  StepLanguageAssociationController,
   stepEditorSelector,
   stepEditorWatchPatterns,
   ValidationController,
@@ -317,6 +319,84 @@ describe('editor validation event wiring', () => {
 });
 
 describe('editor language compatibility', () => {
+  const documentAt = (fsPath: string, languageId = 'markdown') => ({
+    uri: { fsPath, toString: () => `file://${fsPath}` },
+    languageId,
+  }) as unknown as vscode.TextDocument;
+
+  it('назначает language только STEP внутри custom taskDirectory', () => {
+    const root = path.join(path.sep, 'workspace');
+
+    expect(isCanonicalStepDocument(documentAt(path.join(root, 'custom', 'steps', 'STEP-101.md')), root, editorManifest)).toBe(true);
+    expect(isCanonicalStepDocument(documentAt(path.join(root, 'custom', 'outside', 'STEP-101.md')), root, editorManifest)).toBe(false);
+    expect(isCanonicalStepDocument(documentAt(path.join(root, 'custom', 'steps-old', 'STEP-101.md')), root, editorManifest)).toBe(false);
+    expect(isCanonicalStepDocument(documentAt(path.join(root, 'custom', 'steps', 'README.md')), root, editorManifest)).toBe(false);
+  });
+
+  it('не повторяет assignment для harness-step, pending lifecycle и dispose', async () => {
+    const root = path.join(path.sep, 'workspace');
+    const document = documentAt(path.join(root, 'custom', 'steps', 'STEP-101.md'));
+    let completeAssignment: ((document: vscode.TextDocument) => void) | undefined;
+    const setLanguage = jest.fn(() => new Promise<vscode.TextDocument>((resolve) => { completeAssignment = resolve; }));
+    const controller = new StepLanguageAssociationController(root, () => editorManifest, setLanguage);
+
+    controller.associate(document);
+    controller.associate(document);
+    await Promise.resolve();
+    expect(setLanguage).toHaveBeenCalledTimes(1);
+    completeAssignment?.(document);
+    await Promise.resolve();
+
+    controller.associate(documentAt(path.join(root, 'custom', 'steps', 'STEP-101.md'), 'harness-step'));
+    expect(setLanguage).toHaveBeenCalledTimes(1);
+    controller.dispose();
+    controller.associate(documentAt(path.join(root, 'custom', 'steps', 'STEP-102.md')));
+    expect(setLanguage).toHaveBeenCalledTimes(1);
+  });
+
+  it('не назначает runtime language для non-Markdown документа', () => {
+    const root = path.join(path.sep, 'workspace');
+    const setLanguage = jest.fn();
+    const controller = new StepLanguageAssociationController(root, () => editorManifest, setLanguage);
+
+    controller.associate(documentAt(path.join(root, 'custom', 'steps', 'STEP-101.md'), 'plaintext'));
+
+    expect(setLanguage).not.toHaveBeenCalled();
+    controller.dispose();
+  });
+
+  it('локально поглощает rejected runtime assignment', async () => {
+    const root = path.join(path.sep, 'workspace');
+    const setLanguage = jest.fn(() => Promise.reject(new Error('language assignment failed')));
+    const controller = new StepLanguageAssociationController(root, () => editorManifest, setLanguage);
+
+    controller.associate(documentAt(path.join(root, 'custom', 'steps', 'STEP-101.md')));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(setLanguage).toHaveBeenCalledTimes(1);
+    controller.dispose();
+  });
+
+  it('локально поглощает synchronous throw, очищает pending и допускает retry', async () => {
+    const root = path.join(path.sep, 'workspace');
+    const document = documentAt(path.join(root, 'custom', 'steps', 'STEP-101.md'));
+    const setLanguage = jest
+      .fn<Thenable<vscode.TextDocument>, [vscode.TextDocument, string]>()
+      .mockImplementationOnce(() => { throw new Error('language assignment failed synchronously'); })
+      .mockResolvedValueOnce(document);
+    const controller = new StepLanguageAssociationController(root, () => editorManifest, setLanguage);
+
+    expect(() => controller.associate(document)).not.toThrow();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    controller.associate(document);
+    await Promise.resolve();
+    expect(setLanguage).toHaveBeenCalledTimes(2);
+    controller.dispose();
+  });
+
   it('оставляет runtime selector language-only, а index читает custom manifest taskDirectory', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-editor-'));
     try {
