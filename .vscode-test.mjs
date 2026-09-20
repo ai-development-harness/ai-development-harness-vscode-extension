@@ -8,7 +8,7 @@ delete process.env.SNAP_NAME;
 delete process.env.SNAP_REVISION;
 
 export default defineConfig({
-  files: 'tests/integration/**/*.test.js',
+  files: 'tests/integration/**/!(*.pre-activation).test.js',
   // STEP-004: нужен реально открытый workspace, чтобы `activateI18n` мог
   // резолвить `.project/harness-config.json` внутри Extension Host.
   workspaceFolder: 'tests/fixtures/workspace',

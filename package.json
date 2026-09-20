@@ -273,6 +273,7 @@
     "lint": "eslint src",
     "test": "jest",
     "test:integration": "vscode-test",
+    "test:integration:pre-activation": "vscode-test --config .vscode-test.pre-activation.mjs",
     "vscode:prepublish": "npm run build",
     "package": "vsce package"
   },

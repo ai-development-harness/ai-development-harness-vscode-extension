@@ -26,6 +26,7 @@
 | STEP-020 | Принять ADR о безопасном представлении free-text команд в manual handoff MVP | ADR | Критический | Выполнено | STEP-019 | REQ-005, REQ-006 |
 | STEP-021 | Корректировка Smart STEP Editor по findings review STEP-007 | BUGFIX | Высокий | Выполнено | STEP-007, STEP-016 | REQ-003 |
 | STEP-022 | Назначать язык Smart STEP Editor для manifest-resolved taskDirectory | BUGFIX | Высокий | Выполнено | STEP-007, STEP-021 | REQ-003 |
+| STEP-023 | Стабилизировать pre-activation regression Smart STEP Editor в CI | BUGFIX | Высокий | Выполнено | STEP-007, STEP-022 | REQ-003 |
 
 ## Не запланировано (Phase 2, деферред REQ)
 

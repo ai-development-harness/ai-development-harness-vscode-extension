@@ -111,3 +111,10 @@ jobs:
         # `@vscode/test-cli` поднимает реальный headless Extension Host; `xvfb-run` даёт виртуальный display на Linux runner.
         # Пример: npm-скрипт `test:integration` из `package.json`.
         run: xvfb-run -a npm run test:integration
+
+      # Отображаемое имя isolated lifecycle-регрессии.
+      # Пример: документ открыт до первой activation в отдельном Extension Host.
+      - name: Pre-activation integration test (Extension Host)
+        # Отдельный host не наследует activation основного integration step.
+        # Пример: npm-скрипт `test:integration:pre-activation` из package.json.
+        run: xvfb-run -a npm run test:integration:pre-activation
