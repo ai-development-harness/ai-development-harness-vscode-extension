@@ -1,0 +1,10 @@
+# В VSIX входят только runtime bundle, extension manifest и declarative assets.
+# Whitelist исключает локальные inputs, исходники и проектную документацию.
+**
+!dist/extension.js
+!language-configuration.json
+!resources/harness.svg
+!syntaxes/harness-step.tmLanguage.json
+!package.nls.json
+!package.nls.en.json
+!LICENSE

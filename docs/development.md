@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js `22.x` (см. `.nvmrc`), npm.
-- VSCode `^1.96.0` (см. `engines.vscode` в `package.json`) для Extension Development Host.
+- VSCode `^1.137.0` (см. `engines.vscode` в `package.json`) для Extension Development Host.
 
 ## Local setup
 

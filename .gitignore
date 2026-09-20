@@ -40,3 +40,6 @@ coverage/
 # STEP-005 добавляет в тот же fixture-workspace committed manifest.yaml,
 # поэтому игнорируется только runtime-генерируемый файл, не вся директория.
 tests/fixtures/workspace/.harness/harness-config.json
+
+# Собранный бинарник для установки
+*.vsix
