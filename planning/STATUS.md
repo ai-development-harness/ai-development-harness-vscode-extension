@@ -4,7 +4,7 @@
 
 ## Summary
 
-Проект инициализирован (`PROJECT INIT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015/STEP-021/STEP-022/STEP-023/STEP-024 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette (`STEP-005`), Sidebar Explorer (`STEP-006`), Smart STEP Editor (`STEP-007`, corrective STEP-021/STEP-022/STEP-023), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 имеют historical evidence для legacy layout. После `HARNESS UPDATE APPLY` их current compatibility с `.harness/**` требует STEP-024. Status Bar остаётся в будущем STEP-008.
+Проект инициализирован (`PROJECT INIT`, 2026-09-17). Roadmap состоит из 13 STEP MVP (STEP-001..STEP-013), corrective STEP-014/STEP-015/STEP-021/STEP-022/STEP-023/STEP-024/STEP-026 и architecture reconciliation STEP-016..STEP-020, покрывающих REQ-001..REQ-006. Phase 2 REQ (REQ-007..REQ-010) зафиксированы как `Отложено` без STEP. Project scaffolding/инструментарий (`STEP-002`), Parser layer (`STEP-003`), i18n service (`STEP-004`), Command Palette (`STEP-005`), Sidebar Explorer (`STEP-006`), Smart STEP Editor (`STEP-007`, corrective STEP-021/STEP-022/STEP-023), manual handoff (`STEP-009`), corrective STEP-014/STEP-015 и ADR STEP-016..STEP-020 имеют historical evidence для legacy layout. После `HARNESS UPDATE APPLY` их current compatibility с `.harness/**` требует STEP-024. Status Bar остаётся в будущем STEP-008.
 
 ## In progress
 
@@ -20,6 +20,11 @@
 - `STEP-008` (Status Bar) — зависимости выполнены, но выполняется после устранения blocking control-plane drift.
 
 ## Recent completed
+
+- `STEP-026` — corrective BUGFIX TextMate-подсветки ссылок REQ/STEP/ADR во
+  вложенном Markdown: отдельная injection grammar сохраняет стандартные Markdown
+  contexts и исключает code; navigation в prose и списке регресс-покрыта. PASS
+  (`planning/reviews/STEP-026/REVIEW-2026-09-20T1727Z.md`).
 
 - `STEP-021` — corrective BUGFIX Smart STEP Editor: устранены diagnostics
   циклов в несохранённом документе, stale validation и некорректная Markdown

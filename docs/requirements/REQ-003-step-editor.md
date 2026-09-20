@@ -20,5 +20,5 @@ STEP-файл — контракт STEP; ошибки в нём (битые сс
 
 ## Traceability
 
-- STEP: STEP-007, STEP-016, STEP-021, STEP-022, STEP-023, STEP-024
+- STEP: STEP-007, STEP-016, STEP-021, STEP-022, STEP-023, STEP-024, STEP-026
 - ADR: ADR-002, ADR-005

@@ -4,6 +4,7 @@
 !dist/extension.js
 !language-configuration.json
 !resources/harness.svg
+!syntaxes/harness-step-references.tmLanguage.json
 !syntaxes/harness-step.tmLanguage.json
 !package.nls.json
 !package.nls.en.json

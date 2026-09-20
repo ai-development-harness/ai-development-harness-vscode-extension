@@ -69,9 +69,10 @@ ADR-005 закрепляет Parser/path-resolution boundary единствен�
 
 `harness-step` language contribution содержит статический `filenamePatterns` для default layout: VS Code читает contribution из `package.json` до доступа extension к workspace manifest, поэтому declarative glob не может быть manifest-driven. После чтения manifest extension через публичный `vscode.languages.setTextDocumentLanguage` назначает `harness-step` открытому `STEP-*.md` только внутри manifest-resolved `protocol.taskDirectory`; проверка использует нормализованный relative path, а не string prefix. Это сохраняет `filenamePatterns` fast/default association и подключает language-only providers также при custom layout. STEP index и watcher получают `protocol.taskDirectory` исключительно из manifest через Parser boundary; fallback-угадывание файловой topology запрещено ADR-005.
 
-Публичный Extension API VS Code 1.138 не раскрывает TextMate grammar registry или
-token scopes уже зарегистрированного Markdown языка; поэтому extension не
-использует internal API, новую test dependency или vendored grammar ради scope
-inspection. Совместимость грамматик доказывается composition `include` по
-стандартному TextMate contract и загрузкой `harness-step` в Extension Development
-Host; прямой assertion Markdown scopes требует отдельного поддерживаемого API.
+Публичный Extension API VS Code не раскрывает TextMate grammar registry или token
+scopes уже зарегистрированного Markdown языка; extension по-прежнему не использует
+internal API или vendored grammar. Для regression STEP-026 devDependencies
+`vscode-textmate` и `vscode-oniguruma` воспроизводят только публичный TextMate
+contract в unit-тесте: они не попадают в runtime VSIX и проверяют injection grammar
+на контролируемых Markdown-контекстах. Загрузка `harness-step` в Extension
+Development Host остаётся отдельной проверкой declarative contribution.

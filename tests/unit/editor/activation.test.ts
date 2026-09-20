@@ -434,11 +434,24 @@ describe('editor language compatibility', () => {
     ]);
     const languageConfiguration = JSON.parse(configuration) as { comments: Record<string, unknown> };
     const grammarConfiguration = JSON.parse(grammar) as { patterns: Array<Record<string, string>> };
-    const packageConfiguration = JSON.parse(manifest) as { contributes: { languages: Array<{ id: string; filenamePatterns: string[] }> } };
+    const packageConfiguration = JSON.parse(manifest) as {
+      contributes: {
+        languages: Array<{ id: string; filenamePatterns: string[] }>;
+        grammars: Array<{ scopeName: string; path: string; injectTo?: string[] }>;
+      };
+    };
 
     expect(languageConfiguration.comments).toEqual({ blockComment: ['<!--', '-->'] });
     expect(grammarConfiguration.patterns.at(-1)).toEqual({ include: 'text.html.markdown' });
     expect(grammarConfiguration.patterns.slice(0, -1)).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'keyword.control.harness-step' })]));
+    expect(grammarConfiguration.patterns).not.toEqual(expect.arrayContaining([expect.objectContaining({ name: 'constant.other.reference.harness-step' })]));
+    expect(packageConfiguration.contributes.grammars).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        scopeName: 'text.harness-step.references',
+        path: './syntaxes/harness-step-references.tmLanguage.json',
+        injectTo: ['text.harness-step.markdown'],
+      }),
+    ]));
     expect(packageConfiguration.contributes.languages.find((language) => language.id === 'harness-step')?.filenamePatterns).toEqual(['**/planning/tasks/STEP-*.md']);
   });
 });

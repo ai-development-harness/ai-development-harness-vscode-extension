@@ -1,0 +1,10 @@
+{
+  "scopeName": "text.harness-step.references",
+  "injectionSelector": "L:text.harness-step.markdown - markup.fenced_code.block.markdown - markup.inline.raw.string.markdown",
+  "patterns": [
+    {
+      "match": "\\b(?:STEP|REQ|ADR)-\\d+\\b",
+      "name": "constant.other.reference.harness-step"
+    }
+  ]
+}
