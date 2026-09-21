@@ -3,7 +3,108 @@ const fs = require('fs/promises');
 const path = require('path');
 const vscode = require('vscode');
 
+/** Ожидание наблюдаемого состояния вместо fixed delay для watcher и debounce. */
+async function waitFor(assertion, timeoutMs = 5_000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError;
+  while (Date.now() < deadline) {
+    try {
+      return assertion();
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+  throw lastError ?? new Error(`Состояние не достигнуто за ${timeoutMs} ms`);
+}
+
 suite('STEP editor (STEP-007)', () => {
+  test('Status Bar публикует canonical next command в реальном Extension Host', async () => {
+    const ext = vscode.extensions.getExtension('ai-development-harness.harness-navigator');
+    const exports = await ext.activate();
+    const state = exports.statusBar.getDebugState();
+    assert.ok(state.initialized.includes('Harness'));
+    assert.ok(state.completion.includes('%'));
+    // Fixture может не содержать runnable STEP; тогда проверяем explicit empty
+    // state, а при наличии рекомендации — именно canonical Harness command.
+    assert.ok(state.next.includes('STEP ') || state.next.includes('Нет следующего') || state.next.includes('No next'));
+    assert.ok(state.warnings.includes('Warnings'));
+    assert.strictEqual(state.commands.initialized, 'vscode.open');
+    assert.strictEqual(state.commands.completion, 'vscode.open');
+    assert.strictEqual(state.commands.warnings, 'workbench.action.problems.focus');
+    const root = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    assert.strictEqual(state.commandArguments.initialized[0].fsPath, path.join(root, '.harness', 'manifest.yaml'));
+    assert.strictEqual(state.commandArguments.completion[0].fsPath, path.join(root, 'planning', 'STATUS.md'));
+    assert.strictEqual(state.commandArguments.warnings, undefined);
+    const target = path.join(root, 'planning', 'tasks', 'STEP-1.md');
+    const fixture = await fs.readFile(target, 'utf8');
+    try {
+      const before = state.completion;
+      await fs.writeFile(target, fixture.replace('**Статус:** Выполнено', '**Статус:** Запланировано'));
+      await waitFor(() => {
+        const current = exports.statusBar.getDebugState();
+        assert.notStrictEqual(current.completion, before, 'внешняя правка не обновила Status Bar после debounce');
+        assert.ok(current.next.includes('STEP IMPLEMENT STEP-1'));
+        assert.strictEqual(current.commands.next, 'harness.implement');
+        assert.deepStrictEqual(current.commandArguments.next, ['STEP-1']);
+      });
+    } finally {
+      await fs.writeFile(target, fixture);
+      await waitFor(() => assert.strictEqual(exports.statusBar.getDebugState().completion, state.completion));
+    }
+  });
+
+  test('Status Bar фильтрует diagnostics и следует manifest-resolved путям', async () => {
+    const ext = vscode.extensions.getExtension('ai-development-harness.harness-navigator');
+    const exports = await ext.activate();
+    const root = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    const state = exports.statusBar.getDebugState();
+    const diagnostics = vscode.languages.createDiagnosticCollection('step008-status-bar');
+    const owned = vscode.Uri.file(path.join(root, 'planning', 'tasks', 'STEP-1.md'));
+    const external = vscode.Uri.file(path.join(root, 'docs', 'PROJECT.md'));
+    const range = new vscode.Range(0, 0, 0, 1);
+    const manifestPath = path.join(root, '.harness', 'manifest.yaml');
+    const originalManifest = await fs.readFile(manifestPath, 'utf8');
+    const customTasks = path.join(root, 'planning', 'custom-tasks');
+    const customStatus = path.join(root, 'planning', 'custom-STATUS.md');
+    const fixture = await fs.readFile(path.join(root, 'planning', 'tasks', 'STEP-1.md'), 'utf8');
+    try {
+      diagnostics.set(owned, [
+        new vscode.Diagnostic(range, 'error', vscode.DiagnosticSeverity.Error),
+        new vscode.Diagnostic(range, 'warning', vscode.DiagnosticSeverity.Warning),
+        new vscode.Diagnostic(range, 'information', vscode.DiagnosticSeverity.Information),
+        new vscode.Diagnostic(range, 'hint', vscode.DiagnosticSeverity.Hint),
+      ]);
+      diagnostics.set(external, [new vscode.Diagnostic(range, 'external', vscode.DiagnosticSeverity.Error)]);
+      await waitFor(() => assert.match(exports.statusBar.getDebugState().warnings, /(?:Warnings|Предупреждения): 2/));
+      diagnostics.clear();
+      await waitFor(() => assert.strictEqual(exports.statusBar.getDebugState().warnings, state.warnings));
+
+      await fs.mkdir(customTasks, { recursive: true });
+      await fs.writeFile(path.join(customTasks, 'STEP-2.md'), fixture.replaceAll('STEP-1', 'STEP-2'));
+      await fs.writeFile(customStatus, '# custom status\n');
+      await fs.writeFile(manifestPath, originalManifest.replace('taskDirectory: planning/tasks', 'taskDirectory: planning/custom-tasks').replace('status: planning/STATUS.md', 'status: planning/custom-STATUS.md'));
+      await waitFor(() => assert.strictEqual(exports.statusBar.getDebugState().commandArguments.completion[0].fsPath, customStatus));
+      diagnostics.set(vscode.Uri.file(path.join(customTasks, 'STEP-2.md')), [
+        new vscode.Diagnostic(range, 'custom error', vscode.DiagnosticSeverity.Error),
+        new vscode.Diagnostic(range, 'custom warning', vscode.DiagnosticSeverity.Warning),
+      ]);
+      diagnostics.set(owned, [new vscode.Diagnostic(range, 'stale default path', vscode.DiagnosticSeverity.Error)]);
+      await waitFor(() => assert.match(exports.statusBar.getDebugState().warnings, /(?:Warnings|Предупреждения): 2/));
+      diagnostics.clear();
+      await waitFor(() => assert.strictEqual(exports.statusBar.getDebugState().warnings, state.warnings));
+      const beforeCreate = exports.statusBar.getDebugState().completion;
+      await fs.writeFile(path.join(customTasks, 'STEP-3.md'), fixture.replaceAll('STEP-1', 'STEP-3').replace('**Статус:** Выполнено', '**Статус:** Запланировано'));
+      await waitFor(() => assert.notStrictEqual(exports.statusBar.getDebugState().completion, beforeCreate));
+    } finally {
+      diagnostics.dispose();
+      await fs.writeFile(manifestPath, originalManifest);
+      await fs.rm(customTasks, { recursive: true, force: true });
+      await fs.rm(customStatus, { force: true });
+      await waitFor(() => assert.strictEqual(exports.statusBar.getDebugState().commandArguments.completion[0].fsPath, path.join(root, 'planning', 'STATUS.md')));
+    }
+  });
+
   test('открывает STEP-*.md как harness-step и публикует non-blocking diagnostics', async () => {
     const ext = vscode.extensions.getExtension('ai-development-harness.harness-navigator');
     await ext.activate();

@@ -11,7 +11,7 @@
 | STEP-005 | Command Palette: 11 MVP-команд + pre-dispatch валидация | IMPLEMENTATION | Критический | Выполнено | STEP-001, STEP-003, STEP-004 | REQ-001 |
 | STEP-006 | Sidebar Explorer | IMPLEMENTATION | Высокий | Выполнено | STEP-003 | REQ-002 |
 | STEP-007 | STEP File Editor (диагностика, code lens, hover, autocomplete) | IMPLEMENTATION | Высокий | Выполнено | STEP-003, STEP-016 | REQ-003 |
-| STEP-008 | Status Bar | IMPLEMENTATION | Средний | Запланировано | STEP-003, STEP-005 | REQ-004 |
+| STEP-008 | Status Bar | IMPLEMENTATION | Средний | Выполнено | STEP-003, STEP-005 | REQ-004 |
 | STEP-009 | Manual handoff к agent CLI в MVP | IMPLEMENTATION | Критический | Выполнено | STEP-001, STEP-005 | REQ-005 |
 | STEP-010 | Полная локализация реализованного UI | IMPLEMENTATION | Средний | Запланировано | STEP-004, STEP-005, STEP-006, STEP-007, STEP-008, STEP-009 | REQ-006 |
 | STEP-011 | Test suite: >80% coverage + integration-тесты | IMPLEMENTATION | Высокий | Запланировано | STEP-005..STEP-010 | REQ-001..REQ-006 |
